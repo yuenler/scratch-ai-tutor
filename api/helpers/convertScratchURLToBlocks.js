@@ -267,6 +267,8 @@ async function getProjectFromUrl(url) {
 
   // Then, get the full project JSON using the token.
   const res2 = await fetch(`https://projects.scratch.mit.edu/${projectId}?token=${token}`);
+  console.log(res2);
+  console.log(await res2.json());
   return await res2.json();
 }
 

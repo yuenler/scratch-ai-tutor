@@ -16,8 +16,6 @@ export default async function handler(req, res) {
       }
     }
     const { url, question } = body;
-    console.log("URL:", url);
-    console.log("Question:", question);
     if (!url || !question) {
       return res.status(400).json({ error: "Missing 'url' or 'question' in request body." });
     }
