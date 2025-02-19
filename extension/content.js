@@ -191,7 +191,6 @@
     try {
       const response = await fetch("https://scratch-ai-tutor.vercel.app/api/scratch-ai", {
         method: "POST",
-        mode: "no-cors",
         headers: {
           "Content-Type": "application/json"
         },
@@ -200,6 +199,8 @@
           question: question
         })
       });
+
+      console.log(response);
 
       if (!response.ok) {
         throw new Error(`Server error: ${response.statusText}`);
