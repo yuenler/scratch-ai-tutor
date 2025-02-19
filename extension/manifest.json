@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Scratch AI Tutor",
+  "version": "1.0",
+  "description": "An AI tutor that helps with Scratch projects.",
+  "permissions": ["activeTab", "scripting"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "host_permissions": ["<all_urls>"]
+}
