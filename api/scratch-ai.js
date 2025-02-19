@@ -7,7 +7,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { url, question } = req.body;
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (error) {
+        console.error('Failed to parse JSON body:', error);
+      }
+    }
+    const { url, question } = body;
     console.log("URL:", url);
     console.log("Question:", question);
     if (!url || !question) {
