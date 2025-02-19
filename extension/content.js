@@ -143,8 +143,9 @@
     addMessage("Thinking...", "bot");
 
     try {
-      const response = await fetch("http://yourserver.com/api/scratch-ai", {
+      const response = await fetch("https://scratch-ai-tutor.vercel.app/api/scratch-ai", {
         method: "POST",
+        mode: "no-cors",
         headers: {
           "Content-Type": "application/json"
         },

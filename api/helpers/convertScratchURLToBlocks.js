@@ -454,11 +454,3 @@ export default async function convertScratchURLToBlocks(url) {
   const blocksText = blockString(scripts);
   return blocksText;
 }
-
-// ----- Example Usage -----
-// (You can call this function with your Scratch project URL.)
-/*
-convertScratchURLToBlocks("https://scratch.mit.edu/projects/123456789/")
-  .then(text => console.log(text))
-  .catch(err => console.error(err));
-*/
