@@ -8,6 +8,8 @@ export default async function handler(req, res) {
 
   try {
     const { url, question } = req.body;
+    console.log("URL:", url);
+    console.log("Question:", question);
     if (!url || !question) {
       return res.status(400).json({ error: "Missing 'url' or 'question' in request body." });
     }
@@ -16,8 +18,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "URL must be from scratch.mit.edu." });
     }
 
+    console.log("Converting URL to blocks...");
     const scratchBlocks = await convertScratchURLToBlocks(url);
 
+    console.log("Generating prompt...");
     const prompt = `Using the following Scratch blocks context:\n${JSON.stringify(
       scratchBlocks,
       null,
@@ -36,6 +40,8 @@ export default async function handler(req, res) {
       ],
     });
 
+
+    console.log("Answer:", completion.choices[0].message.content);
     const answer = completion.choices[0].message.content.trim();
 
     return res.status(200).json({ answer });

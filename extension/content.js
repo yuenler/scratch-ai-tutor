@@ -48,6 +48,8 @@
       border: none;
       outline: none;
       font-size: 14px;
+      color:black;
+      background-color: #fff;
     }
     .chat-input button {
       padding: 10px 15px;
@@ -74,6 +76,7 @@
     }
     .message.system {
       background-color: #ffc;
+      color: black;
       align-self: center;
       font-style: italic;
     }
@@ -142,6 +145,9 @@
     // Show a temporary “thinking…” message
     addMessage("Thinking...", "bot");
 
+    console.log("URL:", currentUrl);
+    console.log("Question:", question);
+
     try {
       const response = await fetch("https://scratch-ai-tutor.vercel.app/api/scratch-ai", {
         method: "POST",
@@ -180,6 +186,49 @@
   userInput.addEventListener("keypress", function (e) {
     if (e.key === "Enter") {
       sendButton.click();
+    }
+  });
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('chatbot-sidebar');
+    const scratch = document.getElementById('scratch-window');
+    if (!sidebar || !scratch) {
+      console.warn('Sidebar or Scratch window element not found');
+      return;
+    }
+    // Toggle display based on computed style
+    const isHidden = window.getComputedStyle(sidebar).display === 'none';
+    if (isHidden) {
+      // Show sidebar and adjust scratch window margin
+      sidebar.style.display = 'block';
+      // Ensure the sidebar has a width before adjusting scratch margin
+      scratch.style.marginRight = sidebar.offsetWidth + 'px';
+    } else {
+      // Hide sidebar and reset scratch window margin
+      sidebar.style.display = 'none';
+      scratch.style.marginRight = '0px';
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    if (!document.getElementById('toggle-chatbot')) {
+      const toggleButton = document.createElement('button');
+      toggleButton.id = 'toggle-chatbot';
+      toggleButton.innerText = 'Toggle Chatbot Sidebar';
+      // Style the button visibly and fixed in the viewport
+      toggleButton.style.position = 'fixed';
+      toggleButton.style.top = '10px';
+      toggleButton.style.right = '10px';
+      toggleButton.style.zIndex = '99999';
+      toggleButton.style.padding = '8px 12px';
+      toggleButton.style.backgroundColor = '#007bff';
+      toggleButton.style.color = '#fff';
+      toggleButton.style.border = 'none';
+      toggleButton.style.borderRadius = '4px';
+      toggleButton.style.cursor = 'pointer';
+      
+      toggleButton.addEventListener('click', toggleSidebar);
+      document.body.appendChild(toggleButton);
     }
   });
 })();
