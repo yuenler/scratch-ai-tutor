@@ -4,6 +4,15 @@
     return;
   }
 
+  // Store project tokens for reuse
+  let projectTokens = {};
+
+  // Extract project ID from URL
+  function getProjectId(url) {
+    const match = url.match(/scratch\.mit\.edu\/projects\/(\d+)/);
+    return match ? match[1] : null;
+  }
+
   // Create container and attach a shadow DOM
   const container = document.createElement("div");
   container.id = "scratch-ai-tutor-container";
@@ -413,16 +422,30 @@
     chatBody.scrollTop = chatBody.scrollHeight;
 
     const currentUrl = window.location.href;
+    const projectId = getProjectId(currentUrl);
+    const projectToken = projectId ? projectTokens[projectId] : null;
+    
     try {
       const response = await fetch("https://scratch-ai-tutor.vercel.app/api/scratch-ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: currentUrl, question: question })
+        body: JSON.stringify({ 
+          url: currentUrl, 
+          question: question,
+          projectToken: projectToken
+        })
       });
       if (!response.ok) {
         throw new Error(`Server error: ${response.statusText}`);
       }
       const data = await response.json();
+      
+      // Store the token for future use if provided
+      if (data.projectToken && projectId) {
+        projectTokens[projectId] = data.projectToken;
+        console.log(`Stored token for project ${projectId}`);
+      }
+      
       thinkingMessage.remove();
       addMessage(data.answer, "bot");
     } catch (error) {

@@ -255,22 +255,38 @@ function customBlock(block) {
 // --- Helper Functions ---
 
 // Fetch project JSON data from a Scratch URL.
-async function getProjectFromUrl(url) {
+async function getProjectFromUrl(url, providedToken = null) {
   const match = url.match(/scratch\.mit\.edu\/projects\/(\d+)\//);
   if (!match) return null;
   const projectId = match[1];
 
-  // First, get project details to obtain the token.
-  const res1 = await fetch(`https://api.scratch.mit.edu/projects/${projectId}`);
-  const details = await res1.json();
-  const token = details.project_token;
-
-  console.log(details);
-  console.log(token);
+  let token = providedToken;
+  
+  // Only fetch token if not provided
+  if (!token) {
+    console.log(`No token provided for project ${projectId}, fetching...`);
+    // First, get project details to obtain the token.
+    const res1 = await fetch(`https://api.scratch.mit.edu/projects/${projectId}`);
+    const details = await res1.json();
+    token = details.project_token;
+    
+    if (!token) {
+      console.log(`Failed to get token for project ${projectId}`);
+      return { project: null, token: null };
+    }
+  } else {
+    console.log(`Using provided token for project ${projectId}`);
+  }
 
   // Then, get the full project JSON using the token.
-  const res2 = await fetch(`https://projects.scratch.mit.edu/${projectId}?token=${token}`);
-  return await res2.json();
+  try {
+    const res2 = await fetch(`https://projects.scratch.mit.edu/${projectId}?token=${token}`);
+    const project = await res2.json();
+    return { project, token };
+  } catch (error) {
+    console.error(`Error fetching project data for ${projectId}:`, error);
+    return { project: null, token: null };
+  }
 }
 
 // Generate scratchblocks scripts from a project.
@@ -447,13 +463,29 @@ function blockString(scripts) {
 }
 
 // --- Main Function ---
-// This function accepts a Scratch project URL and returns a Promise resolving to the blocks text.
-export default async function convertScratchURLToBlocks(url) {
-  const project = await getProjectFromUrl(url);
-  if (!project) {
-    throw new Error("Could not download project.");
+// This function accepts a Scratch project URL and an optional token, and returns a Promise resolving to the blocks text and token.
+export default async function convertScratchURLToBlocks(url, token = null) {
+  try {
+    // First attempt with provided token
+    let result = await getProjectFromUrl(url, token);
+    
+    // If project fetch failed and we were using a provided token, try again without it
+    // (the token might have expired)
+    if (!result.project && token) {
+      console.log("Provided token failed, fetching a new one...");
+      result = await getProjectFromUrl(url, null);
+    }
+    
+    if (!result.project) {
+      console.error("Failed to download project.");
+      return { blocksText: null, token: null };
+    }
+    
+    const scripts = generateScratchblocks(result.project);
+    const blocksText = blockString(scripts);
+    return { blocksText, token: result.token };
+  } catch (error) {
+    console.error("Error converting Scratch URL to blocks:", error);
+    return { blocksText: null, token: null };
   }
-  const scripts = generateScratchblocks(project);
-  const blocksText = blockString(scripts);
-  return blocksText;
 }

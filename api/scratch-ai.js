@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         console.error('Failed to parse JSON body:', error);
       }
     }
-    const { url, question } = body;
+    const { url, question, projectToken } = body;
     if (!url || !question) {
       return res.status(400).json({ error: "Missing 'url' or 'question' in request body." });
     }
@@ -31,15 +31,15 @@ export default async function handler(req, res) {
     }
 
     console.log("Converting URL to blocks...");
-    const scratchBlocks = await convertScratchURLToBlocks(url);
+    const result = await convertScratchURLToBlocks(url, projectToken);
 
-    if (!scratchBlocks) {
+    if (!result.blocksText) {
       return res.status(400).json({ error: "Could not convert URL to blocks." });
     }
 
     console.log("Generating prompt...");
     const prompt = `Using the following Scratch blocks context:\n${JSON.stringify(
-      scratchBlocks,
+      result.blocksText,
       null,
       2
     )}\n\nAnswer the following question: "${question}"\n\nWhen including Scratch code examples in your response, use the scratchblocks format by wrapping code in triple backticks with 'scratchblocks' as the language identifier like this:\n\n\`\`\`scratchblocks\nwhen green flag clicked\nsay [Hello!] for (2) seconds\n\`\`\``;
@@ -63,7 +63,10 @@ export default async function handler(req, res) {
     console.log("Answer:", completion.choices[0].message.content);
     const answer = completion.choices[0].message.content.trim();
 
-    return res.status(200).json({ answer });
+    return res.status(200).json({ 
+      answer,
+      projectToken: result.token
+    });
   } catch (error) {
     console.error("Error processing request:", error);
     return res.status(500).json({ error: error.message });
