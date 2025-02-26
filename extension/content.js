@@ -63,103 +63,61 @@
 
   // Load scratchblocks libraries by fetching them and injecting as inline scripts
   function injectScratchblocksLibraries() {
-    console.log("Injecting scratchblocks libraries directly...");
     return new Promise((resolve, reject) => {
-      // Check if already loaded
       if (window.scratchblocksLoaded) {
-        console.log("Scratchblocks already loaded via injection");
+        console.log("Scratchblocks already loaded.");
         resolve();
         return;
       }
-      
-      // Get the URLs for the library files
+  
       const scratchblocksUrl = chrome.runtime.getURL("lib/scratchblocks-min.js");
       const translationsUrl = chrome.runtime.getURL("lib/translations-all.js");
-      
-      console.log("Fetching library from:", scratchblocksUrl);
-      
-      // Fetch the main library
-      fetch(scratchblocksUrl)
-        .then(response => response.text())
-        .then(scratchblocksCode => {
-          console.log("Fetched scratchblocks library, size:", scratchblocksCode.length);
-          
-          // Create script element for main library
-          const script1 = document.createElement('script');
-          script1.textContent = scratchblocksCode + "\n//# sourceURL=scratchblocks-min.js";
-          
-          // Append to document
-          (document.head || document.documentElement).appendChild(script1);
-          console.log("Injected scratchblocks library");
-          
-          // Now fetch translations
-          return fetch(translationsUrl);
-        })
-        .then(response => response.text())
-        .then(translationsCode => {
-          console.log("Fetched translations library, size:", translationsCode.length);
-          
-          // Create script element for translations
-          const script2 = document.createElement('script');
-          script2.textContent = translationsCode + "\n//# sourceURL=translations-all.js";
-          
-          // Append to document
-          (document.head || document.documentElement).appendChild(script2);
-          console.log("Injected translations library");
-          
-          // Check if scratchblocks is available in the window context
-          const checkScript = document.createElement('script');
-          checkScript.textContent = `
-            window.scratchblocksLoaded = (typeof scratchblocks !== 'undefined');
-            console.log("Direct check for scratchblocks:", window.scratchblocksLoaded);
-            
-            // Create a global render function for direct access
-            if (window.scratchblocksLoaded) {
-              window.renderScratchBlock = function(code, containerId) {
-                try {
-                  const svg = scratchblocks.render(code, { style: 'scratch3', languages: ['en'] });
-                  const container = document.getElementById(containerId);
-                  if (container) {
-                    container.innerHTML = '';
-                    container.appendChild(svg);
-                    container.dataset.rendered = 'true';
-                    return true;
-                  }
-                  return false;
-                } catch (e) {
-                  console.error("Error in renderScratchBlock:", e);
-                  return false;
-                }
-              };
-            }
-            
-            // Add a flag to document for content script to check
-            document.body.dataset.scratchblocksLoaded = window.scratchblocksLoaded ? 'true' : 'false';
-          `;
-          
-          // Append check script
-          (document.head || document.documentElement).appendChild(checkScript);
-          
-          // Give a moment for scripts to execute
-          setTimeout(() => {
-            const loaded = document.body.dataset.scratchblocksLoaded === 'true';
-            console.log("Scratchblocks loaded check:", loaded);
-            
-            if (loaded) {
-              window.scratchblocksLoaded = true;
-              resolve();
-            } else {
-              console.error("Failed to initialize scratchblocks after direct injection");
-              reject(new Error("Failed to initialize scratchblocks after direct injection"));
-            }
-          }, 200);
-        })
-        .catch(error => {
-          console.error("Error injecting scratchblocks libraries:", error);
-          reject(error);
-        });
+  
+      const script1 = document.createElement("script");
+      script1.src = scratchblocksUrl;
+      script1.onload = () => {
+        console.log("Loaded scratchblocks library.");
+        const script2 = document.createElement("script");
+        script2.src = translationsUrl;
+        script2.onload = () => {
+          console.log("Loaded translations library.");
+          // At this point, if the library is truly UMD/IIFE,
+          // we should have `window.scratchblocks`.
+          if (typeof scratchblocks !== "undefined") {
+            window.scratchblocksLoaded = true;
+            // Optionally define a helper:
+            window.renderScratchBlock = function (code, containerId) {
+              const svg = scratchblocks.render(code, {
+                style: "scratch3",
+                languages: ["en"],
+              });
+              const container = document.getElementById(containerId);
+              if (container) {
+                container.innerHTML = "";
+                container.appendChild(svg);
+                container.dataset.rendered = "true";
+                return true;
+              }
+              return false;
+            };
+            resolve();
+          } else {
+            reject(new Error("scratchblocks not defined after loading."));
+          }
+        };
+        script2.onerror = () => {
+          reject(new Error("Failed to load translations library."));
+        };
+        (document.head || document.documentElement).appendChild(script2);
+      };
+      script1.onerror = () => {
+        reject(new Error("Failed to load scratchblocks library."));
+      };
+      (document.head || document.documentElement).appendChild(script1);
     });
   }
+  
+  
 
   // Function to render scratchblocks in shadow DOM
   function renderScratchblocks() {
@@ -197,16 +155,19 @@
             document.body.appendChild(tempDiv);
             
             // Use the injected render function directly
-            const executeScript = document.createElement('script');
-            executeScript.textContent = `
-              try {
-                const success = window.renderScratchBlock(${JSON.stringify(code)}, ${JSON.stringify(tempId)});
-                console.log("Direct render result:", success);
-              } catch (e) {
-                console.error("Error in direct render:", e);
-              }
-            `;
-            document.body.appendChild(executeScript);
+            chrome.runtime.sendMessage({
+              action: "executeScript",
+              func: function(code, tempId) {
+                try {
+                  const success = window.renderScratchBlock(code, tempId);
+                  console.log("Direct render result:", success);
+                } catch (e) {
+                  console.error("Error in direct render:", e);
+                }
+              },
+              args: [code, tempId]
+            });
+            
             
             // Wait a moment for the rendering to complete
             setTimeout(() => {
