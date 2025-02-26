@@ -1,12 +1,7 @@
 // This endpoint generates SVG from scratchblocks code
-import fs from 'fs';
-import path from 'path';
-import { JSDOM } from 'jsdom';
-import { fileURLToPath } from 'url';
-
-// Get current directory
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const fs = require('fs');
+const path = require('path');
+const { JSDOM } = require('jsdom');
 
 // Create a virtual DOM environment with required browser globals
 const dom = new JSDOM(`
@@ -59,8 +54,8 @@ global.cancelAnimationFrame = id => {
 };
 
 // Load the scratchblocks library
-const scratchblocksPath = path.join(__dirname, 'lib/scratchblocks-min.js');
-const translationsPath = path.join(__dirname, 'lib/translations-all.js');
+const scratchblocksPath = path.join(process.cwd(), 'api/lib/scratchblocks-min.js');
+const translationsPath = path.join(process.cwd(), 'api/lib/translations-all.js');
 
 // Inject library code into the global context
 const scratchblocksCode = fs.readFileSync(scratchblocksPath, 'utf8');
@@ -97,7 +92,7 @@ const renderScratchblocks = (code) => {
   }
 };
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   

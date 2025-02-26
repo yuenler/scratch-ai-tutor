@@ -106,7 +106,9 @@
       })
       .then(response => {
         if (!response.ok) {
-          throw new Error(`API responded with status ${response.status}`);
+          return response.json().then(errorData => {
+            throw new Error(`API responded with status ${response.status}: ${errorData.error || 'Unknown error'}`);
+          });
         }
         return response.json();
       })

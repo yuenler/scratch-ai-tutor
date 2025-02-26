@@ -470,7 +470,7 @@ function blockString(scripts) {
 
 // --- Main Function ---
 // This function accepts a Scratch project URL and an optional token, and returns a Promise resolving to the blocks text and token.
-export default async function convertScratchURLToBlocks(url, token = null) {
+module.exports = async function convertScratchURLToBlocks(url, token = null) {
   try {
     // First attempt with provided token
     let result = await getProjectFromUrl(url, token);

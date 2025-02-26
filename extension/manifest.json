@@ -11,12 +11,6 @@
     }
   ],
   "host_permissions": ["<all_urls>"],
-  "web_accessible_resources": [
-    {
-      "resources": ["lib/*"],
-      "matches": ["<all_urls>"]
-    }
-  ],
   "background": {
     "service_worker": "background.js"
   },
