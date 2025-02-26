@@ -456,7 +456,7 @@
     if (!text) return "";
     
     // Replace code blocks with scratchblocks containers
-    text = text.replace(/```scratch\n([\s\S]*?)\n```/g, function(match, code) {
+    text = text.replace(/```scratchblocks\n([\s\S]*?)\n```/g, function(match, code) {
       return `<div class="scratchblocks-container"><pre class="blocks">${code}</pre></div>`;
     });
     
