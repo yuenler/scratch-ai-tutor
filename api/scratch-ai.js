@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     const result = await convertScratchURLToBlocks(url, projectToken);
 
     if (!result.blocksText) {
-      return res.status(400).json({ error: "Could not convert URL to blocks." });
+      return res.status(500).json({ error: result.error });
     }
 
     console.log("Generating prompt...");

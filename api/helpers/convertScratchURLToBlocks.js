@@ -266,13 +266,18 @@ async function getProjectFromUrl(url, providedToken = null) {
   if (!token) {
     console.log(`No token provided for project ${projectId}, fetching...`);
     // First, get project details to obtain the token.
-    const res1 = await fetch(`https://api.scratch.mit.edu/projects/${projectId}`);
-    const details = await res1.json();
-    token = details.project_token;
-    
-    if (!token) {
-      console.log(`Failed to get token for project ${projectId}`);
-      return { project: null, token: null };
+    try {
+      const res1 = await fetch(`https://api.scratch.mit.edu/projects/${projectId}`);
+      const details = await res1.json();
+      token = details.project_token;
+      
+      if (!token) {
+        console.log(`Failed to get token for project ${projectId}`);
+        return { project: null, token: null, error: "Failed to get token" };
+      }
+    } catch (error) {
+      console.error(`Error fetching project token for ${projectId}:`, error);
+      return { project: null, token: null, error: error };
     }
   } else {
     console.log(`Using provided token for project ${projectId}`);
@@ -285,7 +290,7 @@ async function getProjectFromUrl(url, providedToken = null) {
     return { project, token };
   } catch (error) {
     console.error(`Error fetching project data for ${projectId}:`, error);
-    return { project: null, token: null };
+    return { project: null, token: null, error: error };
   }
 }
 
@@ -478,7 +483,7 @@ export default async function convertScratchURLToBlocks(url, token = null) {
     
     if (!result.project) {
       console.error("Failed to download project.");
-      return { blocksText: null, token: null };
+      return { blocksText: null, token: null, error: result.error };
     }
     
     const scripts = generateScratchblocks(result.project);

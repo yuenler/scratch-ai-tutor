@@ -7,6 +7,54 @@
   // Store project tokens for reuse
   let projectTokens = {};
 
+  // Load saved tokens from storage
+  function loadProjectTokens() {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.local.get(['scratchProjectTokens'], (result) => {
+          if (chrome.runtime.lastError) {
+            console.error('Error loading tokens:', chrome.runtime.lastError);
+            resolve();
+            return;
+          }
+          
+          if (result && result.scratchProjectTokens) {
+            try {
+              projectTokens = JSON.parse(result.scratchProjectTokens);
+              console.log('Loaded project tokens from storage:', Object.keys(projectTokens).length);
+            } catch (e) {
+              console.error('Error parsing stored tokens:', e);
+              projectTokens = {};
+            }
+          } else {
+            console.log('No saved project tokens found in storage');
+          }
+          resolve();
+        });
+      } catch (e) {
+        console.error('Error accessing chrome storage:', e);
+        resolve();
+      }
+    });
+  }
+
+  // Save tokens to storage
+  function saveProjectTokens() {
+    try {
+      chrome.storage.local.set({
+        'scratchProjectTokens': JSON.stringify(projectTokens)
+      }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('Error saving tokens:', chrome.runtime.lastError);
+        } else {
+          console.log('Project tokens saved to storage');
+        }
+      });
+    } catch (e) {
+      console.error('Error saving to chrome storage:', e);
+    }
+  }
+
   // Extract project ID from URL
   function getProjectId(url) {
     const match = url.match(/scratch\.mit\.edu\/projects\/(\d+)/);
@@ -18,36 +66,63 @@
   container.id = "scratch-ai-tutor-container";
   const shadow = container.attachShadow({ mode: "open" });
 
-  // Load scratchblocks library
-  const scratchblocksScript = document.createElement("script");
-  scratchblocksScript.src = "https://scratchblocks.github.io/scratchblocks/scratchblocks-min.js";
-  scratchblocksScript.async = true;
-  document.head.appendChild(scratchblocksScript);
+  // Load scratchblocks libraries into the main document
+  function loadScratchblocksLibraries() {
+    return new Promise((resolve) => {
+      // Check if already loaded
+      if (window.scratchblocks) {
+        resolve();
+        return;
+      }
 
-  // Load scratchblocks translations
-  const translationsScript = document.createElement("script");
-  translationsScript.src = "https://scratchblocks.github.io/scratchblocks/translations-all.js";
-  translationsScript.async = true;
-  document.head.appendChild(translationsScript);
+      // Load the main library
+      const script1 = document.createElement("script");
+      script1.src = chrome.runtime.getURL("lib/scratchblocks-min.js");
+      
+      // Load translations after main library is loaded
+      script1.onload = () => {
+        const script2 = document.createElement("script");
+        script2.src = chrome.runtime.getURL("lib/translations-all.js");
+        script2.onload = resolve;
+        document.head.appendChild(script2);
+      };
+      
+      document.head.appendChild(script1);
+    });
+  }
+
+  // Load libraries
+  loadScratchblocksLibraries();
 
   // Function to render scratchblocks in shadow DOM
   function renderScratchblocks() {
+    if (!window.scratchblocks) return;
+    
     const containers = shadow.querySelectorAll('.scratchblocks-container');
-    if (window.scratchblocks && containers.length > 0) {
-      containers.forEach(container => {
-        if (!container.dataset.rendered) {
-          try {
-            window.scratchblocks.renderMatching('.blocks', {
+    containers.forEach(container => {
+      if (!container.dataset.rendered) {
+        try {
+          const codeElement = container.querySelector('pre.blocks');
+          if (codeElement) {
+            // Get the text content
+            const code = codeElement.textContent;
+            
+            // Render using scratchblocks
+            const svg = window.scratchblocks.render(code, {
               style: 'scratch3',
               languages: ['en']
-            }, container);
+            });
+            
+            // Clear the container and append the SVG
+            container.innerHTML = '';
+            container.appendChild(svg);
             container.dataset.rendered = 'true';
-          } catch (e) {
-            console.error('Error rendering scratchblocks:', e);
           }
+        } catch (e) {
+          console.error('Error rendering scratchblocks:', e);
         }
-      });
-    }
+      }
+    });
   }
 
   // Check if scratchblocks is loaded periodically
@@ -317,6 +392,7 @@
     Scratch AI Tutor
     <span class="minimized-close" title="Close extension">×</span>
   `;
+  minimizedButton.style.display = "flex";
   shadow.appendChild(minimizedButton);
 
   // Append the container to the real DOM
@@ -398,11 +474,6 @@
     } else if (type === "bot") {
       // Parse markdown for bot messages
       message.innerHTML = parseMarkdown(content);
-      
-      // Render scratchblocks after adding content to DOM
-      if (window.scratchblocks) {
-        setTimeout(renderScratchblocks, 50);
-      }
     } else {
       // User and system messages: no markdown parsing
       message.textContent = content;
@@ -410,30 +481,51 @@
     
     chatBody.appendChild(message);
     chatBody.scrollTop = chatBody.scrollHeight;
+    setTimeout(() => {
+      renderScratchblocks();
+    }, 50);
   }
 
   // Send question to server, with thinking indicator
-  async function sendQuestion(question) {
-    // Show thinking indicator
-    const thinkingMessage = document.createElement("div");
-    thinkingMessage.className = "message bot thinking";
-    thinkingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-    chatBody.appendChild(thinkingMessage);
-    chatBody.scrollTop = chatBody.scrollHeight;
-
-    const currentUrl = window.location.href;
-    const projectId = getProjectId(currentUrl);
-    const projectToken = projectId ? projectTokens[projectId] : null;
+  async function sendQuestion() {
+    const projectId = getProjectId(window.location.href);
+    const question = userInput.value.trim();
     
+    if (!question) {
+      return;
+    }
+    
+    // Store cached token if we have one
+    const cachedToken = projectTokens[projectId] || null;
+    if (cachedToken) {
+      console.log(`Using cached token for project ${projectId}`);
+    }
+    
+    // Disable input while processing
+    userInput.disabled = true;
+    sendButton.disabled = true;
+    
+    // Add the user's question to the chat
+    addMessage(question, "user");
+    
+    // Show thinking message
+    addMessage("", "bot thinking");
+    
+    // Clear the input field
+    userInput.value = "";
+
     try {
-      const response = await fetch("https://scratch-ai-tutor.vercel.app/api/scratch-ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          url: currentUrl, 
+      // Send the request to the server
+      const response = await fetch('https://scratch-ai-tutor.vercel.app/api/scratch-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scratchUrl: window.location.href,
           question: question,
-          projectToken: projectToken
-        })
+          projectToken: cachedToken // Send the cached token if available
+        }),
       });
       if (!response.ok) {
         throw new Error(`Server error: ${response.statusText}`);
@@ -444,31 +536,36 @@
       if (data.projectToken && projectId) {
         projectTokens[projectId] = data.projectToken;
         console.log(`Stored token for project ${projectId}`);
+        // Save to storage
+        saveProjectTokens();
       }
+
+      console.log(data.answer)
       
+      // Remove thinking message
+      const thinkingMessage = chatBody.querySelector('.message.bot.thinking');
       thinkingMessage.remove();
       addMessage(data.answer, "bot");
     } catch (error) {
+      // Remove thinking message
+      const thinkingMessage = chatBody.querySelector('.message.bot.thinking');
       thinkingMessage.remove();
       addMessage("Error: " + error.message, "bot");
+    } finally {
+      // Re-enable input
+      userInput.disabled = false;
+      sendButton.disabled = false;
     }
   }
 
   // Send button click
-  sendButton.addEventListener("click", () => {
-    const question = userInput.value.trim();
-    if (!question) return;
-    addMessage(question, "user");
-    userInput.value = "";
-    sendQuestion(question);
-  });
+  sendButton.addEventListener("click", sendQuestion);
 
   // Allow sending via Enter while permitting Shift+Enter for new lines
   userInput.addEventListener("keydown", function (e) {
-    // Only intercept Enter if shift is not pressed
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendButton.click();
+      sendQuestion();
     }
   });
 
@@ -523,5 +620,21 @@
   minimizedClose.addEventListener("click", (e) => {
     e.stopPropagation(); // Don’t reopen the panel
     container.remove();  // remove the entire extension from the DOM
+  });
+
+  // Load project tokens from storage and then initialize the UI
+  loadProjectTokens().then(() => {
+    console.log('Token loading complete, initializing UI');
+    
+    // Now check if we have an existing token for the current project
+    const currentProjectId = getProjectId(window.location.href);
+    if (currentProjectId && projectTokens[currentProjectId]) {
+      console.log(`Found existing token for project ${currentProjectId}`);
+    }
+    
+    // Show the panel
+    panel.style.display = "flex";
+    // Hide the minimized button
+    minimizedButton.style.display = "none";
   });
 })();
