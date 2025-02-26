@@ -61,77 +61,107 @@
     return match ? match[1] : null;
   }
 
+  // Load scratchblocks libraries into the main document
+  function loadScratchblocksLibraries() {
+    console.log("Loading scratchblocks libraries...");
+    return new Promise((resolve, reject) => {
+      // Get the URLs for the library files
+      const scratchblocksUrl = chrome.runtime.getURL("lib/scratchblocks-min.js");
+      const translationsUrl = chrome.runtime.getURL("lib/translations-all.js");
+      
+      // Send message to background script to load libraries
+      chrome.runtime.sendMessage({
+        action: "loadScratchblocksLibraries",
+        urls: {
+          scratchblocksUrl: scratchblocksUrl,
+          translationsUrl: translationsUrl
+        }
+      }, response => {
+        if (response && response.success) {
+          console.log("Libraries loaded successfully");
+          resolve();
+        } else {
+          console.error("Failed to load libraries:", response ? response.error : "Unknown error");
+          reject(new Error(response ? response.error : "Failed to load libraries"));
+        }
+      });
+    });
+  }
+
+  // Function to render scratchblocks in shadow DOM
+  function renderScratchblocks() {
+    console.log("Attempting to render scratchblocks...");
+    
+    // Find all unrendered scratchblocks containers
+    const containers = shadow.querySelectorAll('.scratchblocks-container:not([data-rendered="true"])');
+    if (containers.length === 0) {
+      console.log("No scratchblocks containers to render");
+      return;
+    }
+    
+    console.log(`Found ${containers.length} scratchblocks containers to render`);
+    
+    // Process each container
+    containers.forEach((container, index) => {
+      const codeElement = container.querySelector('pre.blocks');
+      if (!codeElement) {
+        console.error("No pre.blocks element found in container", container);
+        return;
+      }
+      
+      // Get the block code
+      const code = codeElement.textContent;
+      console.log("Rendering scratchblock with content:", code);
+      
+      try {
+        // Create a temporary div in the main document to render the block
+        const tempDiv = document.createElement('div');
+        const tempId = `temp-scratchblock-${Date.now()}-${index}`;
+        tempDiv.id = tempId;
+        document.body.appendChild(tempDiv);
+        
+        // Send message to background script to render block
+        chrome.runtime.sendMessage({
+          action: "renderScratchblocks",
+          blockData: {
+            containerId: tempId,
+            code: code
+          }
+        }, response => {
+          if (response && response.success) {
+            console.log("Block rendered successfully");
+            
+            // Wait a moment for the rendering to complete
+            setTimeout(() => {
+              // Check if the block was rendered
+              if (tempDiv.dataset.rendered === 'true' && tempDiv.firstChild) {
+                // Move the rendered SVG to the shadow DOM
+                container.innerHTML = '';
+                container.appendChild(tempDiv.firstChild.cloneNode(true));
+                container.dataset.rendered = 'true';
+                console.log("Successfully moved rendered block to shadow DOM");
+              } else {
+                console.error("Failed to render scratchblock");
+              }
+              
+              // Clean up
+              document.body.removeChild(tempDiv);
+            }, 100);
+          } else {
+            console.error("Failed to render block:", response ? response.error : "Unknown error");
+            document.body.removeChild(tempDiv);
+          }
+        });
+      } catch (e) {
+        console.error("Error setting up scratchblock rendering:", e);
+      }
+    });
+  }
+
   // Create container and attach a shadow DOM
   const container = document.createElement("div");
   container.id = "scratch-ai-tutor-container";
   const shadow = container.attachShadow({ mode: "open" });
-
-  // Load scratchblocks libraries into the main document
-  function loadScratchblocksLibraries() {
-    return new Promise((resolve) => {
-      // Check if already loaded
-      if (window.scratchblocks) {
-        resolve();
-        return;
-      }
-
-      // Load the main library
-      const script1 = document.createElement("script");
-      script1.src = chrome.runtime.getURL("lib/scratchblocks-min.js");
-      
-      // Load translations after main library is loaded
-      script1.onload = () => {
-        const script2 = document.createElement("script");
-        script2.src = chrome.runtime.getURL("lib/translations-all.js");
-        script2.onload = resolve;
-        document.head.appendChild(script2);
-      };
-      
-      document.head.appendChild(script1);
-    });
-  }
-
-  // Load libraries
-  loadScratchblocksLibraries();
-
-  // Function to render scratchblocks in shadow DOM
-  function renderScratchblocks() {
-    if (!window.scratchblocks) return;
-    
-    const containers = shadow.querySelectorAll('.scratchblocks-container');
-    containers.forEach(container => {
-      if (!container.dataset.rendered) {
-        try {
-          const codeElement = container.querySelector('pre.blocks');
-          if (codeElement) {
-            // Get the text content
-            const code = codeElement.textContent;
-            
-            // Render using scratchblocks
-            const svg = window.scratchblocks.render(code, {
-              style: 'scratch3',
-              languages: ['en']
-            });
-            
-            // Clear the container and append the SVG
-            container.innerHTML = '';
-            container.appendChild(svg);
-            container.dataset.rendered = 'true';
-          }
-        } catch (e) {
-          console.error('Error rendering scratchblocks:', e);
-        }
-      }
-    });
-  }
-
-  // Check if scratchblocks is loaded periodically
-  const scratchblocksCheckInterval = setInterval(() => {
-    if (window.scratchblocks) {
-      renderScratchblocks();
-      clearInterval(scratchblocksCheckInterval);
-    }
-  }, 300);
 
   // Create and append style element with updated styles
   const style = document.createElement("style");
@@ -215,147 +245,170 @@
       flex: 1;
       padding: 12px;
       border: none;
-      outline: none;
-      font-size: 16px;
-      color: #333;
       resize: none;
       font-family: inherit;
-      user-select: auto;
+      font-size: 14px;
+      outline: none;
+      min-height: 50px;
+      max-height: 150px;
     }
 
     .chat-input button {
-      padding: 12px 20px;
-      background-color: #1976d2;
-      border: none;
+      padding: 0 16px;
+      background: #1976d2;
       color: white;
+      border: none;
       cursor: pointer;
-      font-size: 16px;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    .chat-input button:hover {
+      background: #1565c0;
+    }
+
+    .chat-input button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
     }
 
     .message {
-      margin: 8px 0;
-      padding: 10px 14px;
-      border-radius: 20px; /* more curvature */
-      display: inline-block; /* bubble shrinks to fit content */
-      max-width: 70%;        /* up to 70% of container */
-      word-wrap: break-word;
-      white-space: pre-wrap;
-    }
-
-    /* Bot messages (left aligned) */
-    .message.bot {
-      background-color: #e2e3e5;
-      color: #41464b;
-      align-self: flex-start;
-      text-align: left;
-    }
-
-    /* User messages (right aligned) */
-    .message.user {
-      background-color: #cce5ff;
-      color: #004085;
-      align-self: flex-end;
-      text-align: left;
-    }
-
-    .message.system {
-      background-color: #fff3cd;
-      color: #664d03;
-      align-self: center;
-      font-style: italic;
-      text-align: center;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      border-radius: 8px;
       max-width: 80%;
+      word-wrap: break-word;
+      line-height: 1.4;
+      font-size: 14px;
     }
 
-    /* Styles for bullet lists in markdown */
-    .chat-body ul {
-      margin: 0.5em 0;
-      padding-left: 20px;
-    }
-    .chat-body li {
-      margin-bottom: 0.3em;
+    .user-message {
+      align-self: flex-end;
+      background: #e3f2fd;
+      color: #0d47a1;
     }
 
-    /* Scratch Blocks styling */
+    .bot-message {
+      align-self: flex-start;
+      background: #fff;
+      color: #333;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .thinking-message {
+      align-self: flex-start;
+      background: #fff;
+      color: #333;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .system-message {
+      align-self: center;
+      background: #fff3e0;
+      color: #e65100;
+      font-style: italic;
+      max-width: 90%;
+    }
+
+    .thinking {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+    }
+
+    .thinking .dot {
+      width: 8px;
+      height: 8px;
+      background: #888;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    .thinking .dot:nth-child(2) {
+      animation-delay: 0.3s;
+    }
+
+    .thinking .dot:nth-child(3) {
+      animation-delay: 0.6s;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* Minimized button */
+    .scratch-ai-tutor-minimized-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background: #1976d2;
+      border-radius: 50%;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 999999;
+    }
+
+    .minimized-close {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 20px;
+      height: 20px;
+      background: red;
+      border-radius: 50%;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .scratch-ai-tutor-minimized-button:hover .minimized-close {
+      display: block;
+    }
+    
+    /* Scratchblocks styling */
     .scratchblocks-container {
       margin: 10px 0;
-      overflow-x: auto;
-      background-color: #f7f7f7;
+      background-color: #fff;
       border-radius: 8px;
-      padding: 12px;
+      padding: 10px;
+      overflow-x: auto;
     }
     
     .scratchblocks-container svg {
       display: block;
       margin: 0 auto;
     }
-
-    /* Thinking animation styles */
-    .message.bot.thinking {
-      display: inline-flex;
-      gap: 4px;
-      align-items: center;
+    
+    pre.blocks {
+      display: none; /* Hide the original code */
     }
-    .dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      background-color: #41464b;
-      border-radius: 50%;
-      opacity: 0.2;
-      animation: blink 1.4s infinite both;
+    
+    pre.code-block {
+      background: #f0f0f0;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-family: monospace;
     }
-    .dot:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-    .dot:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-    @keyframes blink {
-      0%, 80%, 100% { opacity: 0.2; }
-      40% { opacity: 1; }
-    }
-
-    /* Minimized button styling (inside shadow DOM) */
-    .scratch-ai-tutor-minimized-button {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 99999999;
-      padding: 12px 20px;
-      background-color: #1976d2;
-      color: #fff;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: transform 0.2s, background-color 0.2s;
-      font-size: 16px;
-      display: block; /* We'll start with it visible; panel hidden */
-    }
-
-    .scratch-ai-tutor-minimized-button:hover {
-      transform: scale(1.05);
-      background-color: #1565c0;
-    }
-
-    .scratch-ai-tutor-minimized-button .minimized-close {
-      display: none;
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      background-color: rgba(0,0,0,0.5);
-      color: white;
-      border-radius: 50%;
-      width: 16px;
-      height: 16px;
-      font-size: 12px;
-      text-align: center;
-      line-height: 16px;
-      cursor: pointer;
-    }
-
-    .scratch-ai-tutor-minimized-button:hover .minimized-close {
-      display: block;
+    
+    code {
+      background: #f0f0f0;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
     }
   `;
   shadow.appendChild(style);
@@ -400,60 +453,90 @@
 
   // Markdown parser
   function parseMarkdown(text) {
-    // ScratchBlocks: triple backticks with scratchblocks language (multiple formats)
-    const scratchblocksRegex = /```(scratchblocks|scratch|sb)\n([\s\S]+?)\n```/g;
-    text = text.replace(scratchblocksRegex, function(match, langType, blockContent) {
-      return `<div class="scratchblocks-container"><pre class="blocks">${blockContent}</pre></div>`;
+    if (!text) return "";
+    
+    // Replace code blocks with scratchblocks containers
+    text = text.replace(/```scratch\n([\s\S]*?)\n```/g, function(match, code) {
+      return `<div class="scratchblocks-container"><pre class="blocks">${code}</pre></div>`;
     });
     
-    // Regular code blocks: triple backticks
-    text = text.replace(/```(?!(scratchblocks|scratch|sb))([\s\S]+?)```/g, function(match, p1, p2) {
-      // p1 would be undefined if there's no language specified after the backticks
-      // p2 contains the content within the code block
-      const content = p2 || p1; // If p2 is undefined, use p1 as the content
-      return `<pre style="background:#f0f0f0; padding:10px; border-radius:4px; overflow-x:auto;"><code>${content}</code></pre>`;
-    });
-    
-    // Inline code: single backticks
-    text = text.replace(/`([^`]+)`/g, '<code style="background:#f0f0f0; padding:2px 4px; border-radius:4px;">$1</code>');
-    // Headers
-    text = text.replace(/^###### (.*)$/gm, '<h6>$1</h6>');
-    text = text.replace(/^##### (.*)$/gm, '<h5>$1</h5>');
-    text = text.replace(/^#### (.*)$/gm, '<h4>$1</h4>');
-    text = text.replace(/^### (.*)$/gm, '<h3>$1</h3>');
-    text = text.replace(/^## (.*)$/gm, '<h2>$1</h2>');
-    text = text.replace(/^# (.*)$/gm, '<h1>$1</h1>');
-    // Bold & italics
-    text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-    // Bullet lists
-    const lines = text.split('\n');
-    const processedLines = [];
-    let inList = false;
-    for (let line of lines) {
-      if (/^\s*-\s+/.test(line)) {
-        if (!inList) {
-          inList = true;
-          processedLines.push('<ul>');
-        }
-        processedLines.push('<li>' + line.replace(/^\s*-\s+/, '') + '</li>');
-      } else {
-        if (inList) {
-          inList = false;
-          processedLines.push('</ul>');
-        }
-        processedLines.push(line);
+    // Replace other code blocks
+    text = text.replace(/```(\w*)\n([\s\S]*?)\n```/g, function(match, language, code) {
+      if (language === 'scratch') {
+        return `<div class="scratchblocks-container"><pre class="blocks">${code}</pre></div>`;
       }
+      return `<pre class="code-block ${language}">${code}</pre>`;
+    });
+    
+    // Replace inline code
+    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
+    // Replace bold text
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // Replace italic text
+    text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    
+    // Replace links
+    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    
+    // Replace headers (h1, h2, h3)
+    text = text.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+    text = text.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+    text = text.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+    
+    // Replace lists
+    text = text.replace(/^\s*\d+\.\s+(.*$)/gm, '<li>$1</li>');
+    text = text.replace(/^\s*\*\s+(.*$)/gm, '<li>$1</li>');
+    
+    // Wrap adjacent list items in ul/ol
+    text = text.replace(/<li>.*?<\/li>/g, function(match) {
+      return '<ul>' + match + '</ul>';
+    });
+    
+    // Replace paragraphs (two newlines)
+    text = text.replace(/\n\n/g, '</p><p>');
+    
+    // Wrap with paragraph tags if not already wrapped
+    if (!text.startsWith('<')) {
+      text = '<p>' + text + '</p>';
     }
-    if (inList) {
-      processedLines.push('</ul>');
-    }
-    text = processedLines.join('\n');
-
-    // Replace newlines with <br>
-    text = text.replace(/\n/g, '<br>');
+    
     return text;
+  }
+
+  // Helper to add a message
+  function addMessage(content, type) {
+    const messageEl = document.createElement("div");
+    messageEl.className = `message ${type}-message`;
+    
+    // Special handling for "thinking" state
+    if (type === "thinking") {
+      messageEl.classList.add("thinking");
+      messageEl.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+    } else if (type === "bot") {
+      // Parse markdown for bot messages
+      const parsedContent = parseMarkdown(content);
+      messageEl.innerHTML = parsedContent;
+    } else if (type === "user") {
+      // User messages: simple text
+      messageEl.textContent = content;
+    } else if (type === "system") {
+      // System messages: simple text
+      messageEl.textContent = content;
+    }
+    
+    chatBody.appendChild(messageEl);
+    chatBody.scrollTop = chatBody.scrollHeight;
+    
+    // Render any scratchblocks in the new message if it's a bot message
+    if (type === "bot") {
+      setTimeout(() => {
+        renderScratchblocks();
+      }, 100);
+    }
+    
+    return messageEl;
   }
 
   // Get elements from shadow DOM
@@ -462,106 +545,87 @@
   const userInput = shadow.getElementById("userInput");
   const sendButton = shadow.getElementById("sendButton");
 
-  // Helper to add a message
-  function addMessage(content, type) {
-    const message = document.createElement("div");
-    message.className = `message ${type}`;
-    
-    // Special handling for "thinking" state
-    if (type === "bot thinking") {
-      message.classList.add("thinking");
-      message.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
-    } else if (type === "bot") {
-      // Parse markdown for bot messages
-      message.innerHTML = parseMarkdown(content);
-    } else {
-      // User and system messages: no markdown parsing
-      message.textContent = content;
-    }
-    
-    chatBody.appendChild(message);
-    chatBody.scrollTop = chatBody.scrollHeight;
-    setTimeout(() => {
-      renderScratchblocks();
-    }, 50);
-  }
-
   // Send question to server, with thinking indicator
-  async function sendQuestion() {
-    const projectId = getProjectId(window.location.href);
+  function sendQuestion() {
     const question = userInput.value.trim();
-    
-    if (!question) {
-      return;
-    }
-    
-    // Store cached token if we have one
-    const cachedToken = projectTokens[projectId] || null;
-    if (cachedToken) {
-      console.log(`Using cached token for project ${projectId}`);
-    }
+    if (!question) return;
     
     // Disable input while processing
     userInput.disabled = true;
     sendButton.disabled = true;
     
-    // Add the user's question to the chat
+    // Add user message
     addMessage(question, "user");
     
-    // Show thinking message
-    addMessage("", "bot thinking");
-    
-    // Clear the input field
+    // Clear input
     userInput.value = "";
-
-    try {
-
-      console.log('Scratch url:', window.location.href);
-      console.log('Question:', question);
-      console.log('Cached token:', cachedToken);
-      // Send the request to the server
-      const response = await fetch('https://scratch-ai-tutor.vercel.app/api/scratch-ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: window.location.href,
-          question: question,
-          projectToken: cachedToken // Send the cached token if available
-        }),
-      });
-
-      console.log(response);
+    
+    // Add thinking indicator
+    const thinkingEl = addMessage("", "thinking");
+    
+    // Get project ID from URL
+    const projectId = getProjectId(window.location.href);
+    if (!projectId) {
+      chatBody.removeChild(thinkingEl);
+      addMessage("Sorry, I couldn't identify the Scratch project ID from the URL.", "bot");
+      userInput.disabled = false;
+      sendButton.disabled = false;
+      return;
+    }
+    
+    console.log('Scratch url:', window.location.href);
+    console.log('Question:', question);
+    console.log('Project ID:', projectId);
+    console.log('Cached token:', projectTokens[projectId] || null);
+    
+    // Send request to API
+    fetch("https://scratch-ai-tutor.vercel.app/api/scratch-ai", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        url: window.location.href,
+        question: question,
+        projectToken: projectTokens[projectId] || null
+      })
+    })
+    .then(response => {
       if (!response.ok) {
-        throw new Error(`Server error: ${response.statusText}`);
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
       }
-      const data = await response.json();
+      return response.json();
+    })
+    .then(data => {
+      // Remove thinking indicator
+      chatBody.removeChild(thinkingEl);
       
-      // Store the token for future use if provided
-      if (data.projectToken && projectId) {
-        projectTokens[projectId] = data.projectToken;
-        console.log(`Stored token for project ${projectId}`);
-        // Save to storage
-        saveProjectTokens();
+      if (data.error) {
+        addMessage(`Error: ${data.error}`, "bot");
+      } else {
+        // Add bot response
+        addMessage(data.answer, "bot");
+        
+        // Save tokens if provided
+        if (data.projectToken && projectId) {
+          projectTokens[projectId] = data.projectToken;
+          saveProjectTokens();
+        }
       }
-
-      console.log(data.answer)
+    })
+    .catch(error => {
+      // Remove thinking indicator
+      chatBody.removeChild(thinkingEl);
       
-      // Remove thinking message
-      const thinkingMessage = chatBody.querySelector('.message.bot.thinking');
-      thinkingMessage.remove();
-      addMessage(data.answer, "bot");
-    } catch (error) {
-      // Remove thinking message
-      const thinkingMessage = chatBody.querySelector('.message.bot.thinking');
-      thinkingMessage.remove();
-      addMessage("Error: " + error.message, "bot");
-    } finally {
+      console.error("Error:", error);
+      addMessage(`Sorry, there was an error communicating with the server: ${error.message}`, "bot");
+    })
+    .finally(() => {
       // Re-enable input
       userInput.disabled = false;
       sendButton.disabled = false;
-    }
+      userInput.focus();
+    });
   }
 
   // Send button click
@@ -643,4 +707,7 @@
     // Hide the minimized button
     minimizedButton.style.display = "none";
   });
+
+  // Load libraries
+  loadScratchblocksLibraries();
 })();
