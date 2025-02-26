@@ -2,32 +2,100 @@
 import fs from 'fs';
 import path from 'path';
 import { JSDOM } from 'jsdom';
+import { fileURLToPath } from 'url';
 
-// Create a virtual DOM environment
-const dom = new JSDOM(`<!DOCTYPE html><html><body></body></html>`, {
-  runScripts: 'dangerously',
-  resources: 'usable'
+// Get current directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Create a virtual DOM environment with required browser globals
+const dom = new JSDOM(`
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>
+  <div id="scratch-blocks-container"></div>
+</body>
+</html>
+`, {
+  url: "https://example.org/",
+  referrer: "https://example.com/",
+  contentType: "text/html",
+  includeNodeLocations: true,
+  storageQuota: 10000000,
+  runScripts: "dangerously"
 });
-const window = dom.window;
-const document = window.document;
 
-// Load scratchblocks libraries
-const scratchblocksCode = fs.readFileSync(path.join(process.cwd(), 'api/lib/scratchblocks-min.js'), 'utf8');
-const translationsCode = fs.readFileSync(path.join(process.cwd(), 'api/lib/translations-all.js'), 'utf8');
+// Set up globals that scratchblocks might expect
+global.window = dom.window;
+global.document = dom.window.document;
+global.navigator = dom.window.navigator;
+global.HTMLElement = dom.window.HTMLElement;
+global.SVGElement = dom.window.SVGElement;
+global.Element = dom.window.Element;
+global.Node = dom.window.Node;
+global.XMLSerializer = dom.window.XMLSerializer;
+global.DOMParser = dom.window.DOMParser;
 
-// Inject scripts into virtual DOM
-const script1 = document.createElement('script');
-script1.textContent = scratchblocksCode;
-document.body.appendChild(script1);
+// Create a fetch polyfill for Node.js (required by scratchblocks)
+global.fetch = async (url) => {
+  return {
+    ok: true,
+    text: async () => "mocked response",
+    json: async () => ({}),
+  };
+};
 
-const script2 = document.createElement('script');
-script2.textContent = translationsCode;
-document.body.appendChild(script2);
+// Define requestAnimationFrame for Node environment
+global.requestAnimationFrame = callback => {
+  return setTimeout(callback, 0);
+};
 
-// Create container for rendering
-const container = document.createElement('div');
-container.id = 'scratchblocks-container';
-document.body.appendChild(container);
+// Define cancelAnimationFrame for Node environment
+global.cancelAnimationFrame = id => {
+  clearTimeout(id);
+};
+
+// Load the scratchblocks library
+const scratchblocksPath = path.join(__dirname, 'lib/scratchblocks-min.js');
+const translationsPath = path.join(__dirname, 'lib/translations-all.js');
+
+// Inject library code into the global context
+const scratchblocksCode = fs.readFileSync(scratchblocksPath, 'utf8');
+const translationsCode = fs.readFileSync(translationsPath, 'utf8');
+
+// Run the scripts in the virtual DOM
+dom.window.eval(scratchblocksCode);
+dom.window.eval(translationsCode);
+
+// Create a wrapper for the scratchblocks renderer
+const renderScratchblocks = (code) => {
+  try {
+    // Get the scratchblocks object from the window
+    const scratchblocks = dom.window.scratchblocks;
+    
+    if (!scratchblocks) {
+      throw new Error('scratchblocks library not properly loaded');
+    }
+    
+    // Render to SVG and get the DOM element
+    const svgElement = scratchblocks.render(code, {
+      style: 'scratch3',
+      languages: ['en']
+    });
+    
+    // Use XMLSerializer to convert the SVG element to a string
+    const serializer = new dom.window.XMLSerializer();
+    const svgString = serializer.serializeToString(svgElement);
+    
+    return svgString;
+  } catch (error) {
+    console.error('Error rendering scratchblocks:', error);
+    throw error;
+  }
+};
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -59,30 +127,33 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing "code" in request body' });
     }
 
-    // Render scratchblocks to SVG
+    console.log('Received scratchblocks code:', code);
+
+    // Attempt to render scratchblocks
     try {
-      // Access scratchblocks from window context
-      if (!window.scratchblocks) {
-        return res.status(500).json({ error: 'Scratchblocks library not loaded properly' });
-      }
+      const svgString = renderScratchblocks(code);
       
-      // Render the code to SVG
-      const svg = window.scratchblocks.render(code, { style: 'scratch3', languages: ['en'] });
+      // If rendering successful, return the SVG
+      return res.status(200).json({ 
+        svg: svgString,
+        success: true
+      });
+    } catch (renderError) {
+      console.error('Render error:', renderError);
       
-      // Convert SVG element to string
-      const svgString = svg.outerHTML;
-      
-      return res.status(200).json({ svg: svgString });
-    } catch (error) {
-      console.error('Error rendering scratchblocks:', error);
+      // Return a more detailed error response
       return res.status(500).json({ 
         error: 'Error rendering scratchblocks', 
-        details: error.message,
-        stack: error.stack
+        details: renderError.message,
+        stack: renderError.stack,
+        code: code
       });
     }
   } catch (error) {
     console.error('Error processing request:', error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ 
+      error: error.message,
+      stack: error.stack
+    });
   }
 }
