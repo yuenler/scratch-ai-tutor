@@ -6,11 +6,21 @@
   "permissions": ["activeTab", "scripting", "storage"],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "matches": ["*://scratch.mit.edu/projects/*"],
+      "js": [
+        "lib/scratchblocks-min.js",
+        "lib/translations-all.js",
+        "content.js"
+      ]
     }
   ],
   "host_permissions": ["<all_urls>"],
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "background": {
     "service_worker": "background.js"
   },
