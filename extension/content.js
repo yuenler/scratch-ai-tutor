@@ -9,6 +9,46 @@
   container.id = "scratch-ai-tutor-container";
   const shadow = container.attachShadow({ mode: "open" });
 
+  // Load scratchblocks library
+  const scratchblocksScript = document.createElement("script");
+  scratchblocksScript.src = "https://scratchblocks.github.io/scratchblocks/scratchblocks-min.js";
+  scratchblocksScript.async = true;
+  document.head.appendChild(scratchblocksScript);
+
+  // Load scratchblocks translations
+  const translationsScript = document.createElement("script");
+  translationsScript.src = "https://scratchblocks.github.io/scratchblocks/translations-all.js";
+  translationsScript.async = true;
+  document.head.appendChild(translationsScript);
+
+  // Function to render scratchblocks in shadow DOM
+  function renderScratchblocks() {
+    const containers = shadow.querySelectorAll('.scratchblocks-container');
+    if (window.scratchblocks && containers.length > 0) {
+      containers.forEach(container => {
+        if (!container.dataset.rendered) {
+          try {
+            window.scratchblocks.renderMatching('.blocks', {
+              style: 'scratch3',
+              languages: ['en']
+            }, container);
+            container.dataset.rendered = 'true';
+          } catch (e) {
+            console.error('Error rendering scratchblocks:', e);
+          }
+        }
+      });
+    }
+  }
+
+  // Check if scratchblocks is loaded periodically
+  const scratchblocksCheckInterval = setInterval(() => {
+    if (window.scratchblocks) {
+      renderScratchblocks();
+      clearInterval(scratchblocksCheckInterval);
+    }
+  }, 300);
+
   // Create and append style element with updated styles
   const style = document.createElement("style");
   style.textContent = `
@@ -152,6 +192,20 @@
       margin-bottom: 0.3em;
     }
 
+    /* Scratch Blocks styling */
+    .scratchblocks-container {
+      margin: 10px 0;
+      overflow-x: auto;
+      background-color: #f7f7f7;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    
+    .scratchblocks-container svg {
+      display: block;
+      margin: 0 auto;
+    }
+
     /* Thinking animation styles */
     .message.bot.thinking {
       display: inline-flex;
@@ -261,10 +315,20 @@
 
   // Markdown parser
   function parseMarkdown(text) {
-    // Code blocks: triple backticks
-    text = text.replace(/```([\s\S]+?)```/g, function(match, p1) {
-      return `<pre style="background:#f0f0f0; padding:10px; border-radius:4px; overflow-x:auto;"><code>${p1}</code></pre>`;
+    // ScratchBlocks: triple backticks with scratchblocks language (multiple formats)
+    const scratchblocksRegex = /```(scratchblocks|scratch|sb)\n([\s\S]+?)\n```/g;
+    text = text.replace(scratchblocksRegex, function(match, langType, blockContent) {
+      return `<div class="scratchblocks-container"><pre class="blocks">${blockContent}</pre></div>`;
     });
+    
+    // Regular code blocks: triple backticks
+    text = text.replace(/```(?!(scratchblocks|scratch|sb))([\s\S]+?)```/g, function(match, p1, p2) {
+      // p1 would be undefined if there's no language specified after the backticks
+      // p2 contains the content within the code block
+      const content = p2 || p1; // If p2 is undefined, use p1 as the content
+      return `<pre style="background:#f0f0f0; padding:10px; border-radius:4px; overflow-x:auto;"><code>${content}</code></pre>`;
+    });
+    
     // Inline code: single backticks
     text = text.replace(/`([^`]+)`/g, '<code style="background:#f0f0f0; padding:2px 4px; border-radius:4px;">$1</code>');
     // Headers
@@ -315,14 +379,27 @@
 
   // Helper to add a message
   function addMessage(content, type) {
-    const msg = document.createElement("div");
-    msg.className = "message " + type;
-    if (type === "bot") {
-      msg.innerHTML = parseMarkdown(content);
+    const message = document.createElement("div");
+    message.className = `message ${type}`;
+    
+    // Special handling for "thinking" state
+    if (type === "bot thinking") {
+      message.classList.add("thinking");
+      message.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+    } else if (type === "bot") {
+      // Parse markdown for bot messages
+      message.innerHTML = parseMarkdown(content);
+      
+      // Render scratchblocks after adding content to DOM
+      if (window.scratchblocks) {
+        setTimeout(renderScratchblocks, 50);
+      }
     } else {
-      msg.textContent = content; // user/system: no markdown parse
+      // User and system messages: no markdown parsing
+      message.textContent = content;
     }
-    chatBody.appendChild(msg);
+    
+    chatBody.appendChild(message);
     chatBody.scrollTop = chatBody.scrollHeight;
   }
 
