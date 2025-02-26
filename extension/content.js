@@ -515,6 +515,10 @@
     userInput.value = "";
 
     try {
+
+      console.log('Scratch url:', window.location.href);
+      console.log('Question:', question);
+      console.log('Cached token:', cachedToken);
       // Send the request to the server
       const response = await fetch('https://scratch-ai-tutor.vercel.app/api/scratch-ai', {
         method: 'POST',
@@ -522,11 +526,13 @@
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          scratchUrl: window.location.href,
+          url: window.location.href,
           question: question,
           projectToken: cachedToken // Send the cached token if available
         }),
       });
+
+      console.log(response);
       if (!response.ok) {
         throw new Error(`Server error: ${response.statusText}`);
       }
