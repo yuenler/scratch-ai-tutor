@@ -33,6 +33,10 @@ export default async function handler(req, res) {
     console.log("Converting URL to blocks...");
     const scratchBlocks = await convertScratchURLToBlocks(url);
 
+    if (!scratchBlocks) {
+      return res.status(400).json({ error: "Could not convert URL to blocks." });
+    }
+
     console.log("Generating prompt...");
     const prompt = `Using the following Scratch blocks context:\n${JSON.stringify(
       scratchBlocks,
