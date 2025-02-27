@@ -77,11 +77,16 @@
     preBlocks.forEach((pre) => {
       try {
         // Render the scratchblocks code using the library's render function.
-        const svg = scratchblocks.renderMatching(pre.textContent, {
+        // Instead of renderMatching, use the parse and render methods directly
+        const code = pre.textContent;
+        const doc = scratchblocks.parse(code, {
+          languages: ['en']
+        });
+        const svg = scratchblocks.render(doc, {
           style: 'scratch3',
-          languages: ['en'],
           scale: 1
         });
+        
         // Replace the parent container's content with the rendered SVG.
         const container = pre.parentElement;
         container.innerHTML = '';
