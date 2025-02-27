@@ -67,6 +67,174 @@
   // Function to render scratchblocks in shadow DOM using scratchblocks.render
   function renderScratchblocks() {
     console.log("Attempting to render scratchblocks...");
+    // Add scratchblocks CSS directly to shadow DOM
+    if (!shadow.querySelector('#scratchblocks-style')) {
+      const style = document.createElement('style');
+      style.id = 'scratchblocks-style';
+      
+      // Full CSS for Scratch blocks - copied from the scratchblocks library
+      style.textContent = `
+        .sb3-label {
+          font: 500 12pt Helvetica Neue, Helvetica, sans-serif;
+          word-spacing: +1pt;
+        }
+        
+        .sb3-literal-number,
+        .sb3-literal-string,
+        .sb3-literal-number-dropdown,
+        .sb3-literal-dropdown {
+          word-spacing: 0;
+        }
+        
+        .sb3-comment {
+          fill: #ffffa5;
+          stroke: #d0d1d2;
+          stroke-width: 1;
+        }
+        .sb3-comment-line {
+          fill: #ffff80;
+        }
+        .sb3-comment-label {
+          font: 400 12pt Helvetica Neue, Helvetica, sans-serif;
+          fill: #000;
+          word-spacing: 0;
+        }
+        
+        .sb3-diff {
+          fill: none;
+          stroke: #000;
+        }
+        
+        /* Motion blocks */
+        svg .sb3-motion {
+          fill: #4c97ff;
+          stroke: #3373cc;
+        }
+        svg .sb3-motion-alt {
+          fill: #4280d7;
+        }
+        svg .sb3-motion-dark {
+          fill: #3373cc;
+        }
+        
+        /* Looks blocks */
+        svg .sb3-looks {
+          fill: #9966ff;
+          stroke: #774dcb;
+        }
+        svg .sb3-looks-alt {
+          fill: #855cd6;
+        }
+        svg .sb3-looks-dark {
+          fill: #774dcb;
+        }
+        
+        /* Sound blocks */
+        svg .sb3-sound {
+          fill: #cf63cf;
+          stroke: #bd42bd;
+        }
+        svg .sb3-sound-alt {
+          fill: #c94fc9;
+        }
+        svg .sb3-sound-dark {
+          fill: #bd42bd;
+        }
+        
+        /* Control blocks */
+        svg .sb3-control {
+          fill: #ffab19;
+          stroke: #cf8b17;
+        }
+        svg .sb3-control-alt {
+          fill: #ec9c13;
+        }
+        svg .sb3-control-dark {
+          fill: #cf8b17;
+        }
+        
+        /* Event blocks */
+        svg .sb3-events {
+          fill: #ffbf00;
+          stroke: #cc9900;
+        }
+        svg .sb3-events-alt {
+          fill: #e6ac00;
+        }
+        svg .sb3-events-dark {
+          fill: #cc9900;
+        }
+        
+        /* Sensing blocks */
+        svg .sb3-sensing {
+          fill: #5cb1d6;
+          stroke: #2e8eb8;
+        }
+        svg .sb3-sensing-alt {
+          fill: #47a8d1;
+        }
+        svg .sb3-sensing-dark {
+          fill: #2e8eb8;
+        }
+        
+        /* Operator blocks */
+        svg .sb3-operators {
+          fill: #59c059;
+          stroke: #389438;
+        }
+        svg .sb3-operators-alt {
+          fill: #46b946;
+        }
+        svg .sb3-operators-dark {
+          fill: #389438;
+        }
+        
+        /* Variables blocks */
+        svg .sb3-variables {
+          fill: #ff8c1a;
+          stroke: #db6e00;
+        }
+        svg .sb3-variables-alt {
+          fill: #ff8000;
+        }
+        svg .sb3-variables-dark {
+          fill: #db6e00;
+        }
+        
+        /* List blocks */
+        svg .sb3-list {
+          fill: #ff661a;
+          stroke: #e64d00;
+        }
+        svg .sb3-list-alt {
+          fill: #ff5500;
+        }
+        svg .sb3-list-dark {
+          fill: #e64d00;
+        }
+        
+        svg .sb3-label {
+          fill: #fff;
+        }
+        
+        svg .sb3-input-color {
+          stroke: #fff;
+        }
+        
+        svg .sb3-input-number,
+        svg .sb3-input-string {
+          fill: #fff;
+        }
+        svg .sb3-literal-number,
+        svg .sb3-literal-string {
+          fill: #575e75;
+        }
+      `;
+      
+      shadow.appendChild(style);
+      console.log("Added scratchblocks styles to shadow DOM");
+    }
+
     // Since our scratchblocks code is inside the shadow DOM, get all pre.blocks elements from our shadow root.
     const preBlocks = shadow.querySelectorAll('pre.blocks');
     if (preBlocks.length === 0) {
@@ -85,6 +253,43 @@
         const svg = scratchblocks.render(doc, {
           style: 'scratch3',
           scale: 1
+        });
+        
+        // Make sure SVG has proper class for styling
+        svg.setAttribute('class', 'scratchblocks');
+        
+        // Make sure all SVG elements have the proper sb3 classes
+        const allPaths = svg.querySelectorAll('path');
+        allPaths.forEach(path => {
+          const parent = path.parentElement;
+          if (parent && parent.getAttribute('class')) {
+            const className = parent.getAttribute('class');
+            if (className.includes('stack')) {
+              // Determine block type based on text content
+              const text = pre.textContent.trim().toLowerCase();
+              let blockType = 'sb3-control'; // Default type
+              
+              if (text.includes('move') || text.includes('turn') || text.includes('direction') || text.includes('steps')) {
+                blockType = 'sb3-motion';
+              } else if (text.includes('say') || text.includes('costume') || text.includes('look') || text.includes('size')) {
+                blockType = 'sb3-looks';
+              } else if (text.includes('play') || text.includes('sound')) {
+                blockType = 'sb3-sound';
+              } else if (text.includes('when') || text.includes('broadcast')) {
+                blockType = 'sb3-events';
+              } else if (text.includes('sensing') || text.includes('touching') || text.includes('ask')) {
+                blockType = 'sb3-sensing';
+              } else if (text.includes('+') || text.includes('-') || text.includes('*') || text.includes('/') || 
+                        text.includes('<') || text.includes('>') || text.includes('=')) {
+                blockType = 'sb3-operators';
+              } else if (text.includes('variable') || text.includes('my')) {
+                blockType = 'sb3-variables';
+              }
+              
+              // Add the block type class
+              parent.setAttribute('class', `${parent.getAttribute('class')} ${blockType}`);
+            }
+          }
         });
         
         // Replace the parent container's content with the rendered SVG.
