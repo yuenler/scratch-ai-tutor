@@ -61,163 +61,46 @@
     return match ? match[1] : null;
   }
 
-  // Load scratchblocks libraries by checking if they're already loaded
-  // (They are loaded via manifest content_scripts)
-  function injectScratchblocksLibraries() {
-    return new Promise((resolve, reject) => {
-      if (window.scratchblocksLoaded) {
-        console.log("Scratchblocks already loaded.");
-        resolve();
-        return;
-      }
-      // Since scratchblocks libraries are loaded directly via content_scripts,
-      // we just check if they are available.
-      if (typeof scratchblocks !== "undefined") {
-        window.scratchblocksLoaded = true;
-        // Optionally define a helper:
-        window.renderScratchBlock = function (code, containerId) {
-          try {
-            const svg = scratchblocks.render(code, {
-              style: "scratch3",
-              languages: ["en"],
-            });
-            const container = document.getElementById(containerId);
-            if (container) {
-              container.innerHTML = "";
-              container.appendChild(svg);
-              container.dataset.rendered = "true";
-              return true;
-            }
-            return false;
-          } catch (e) {
-            console.error("Error in renderScratchBlock:", e);
-            return false;
-          }
-        };
-        resolve();
-      } else {
-        reject(new Error("scratchblocks not defined after loading."));
-      }
-    });
-  }
-  
-  // Function to render scratchblocks in shadow DOM
+  // We no longer need to dynamically inject scratchblocks libraries since they are loaded via content_scripts.
+  // Therefore, the injectScratchblocksLibraries() function has been removed.
+
+  // Function to render scratchblocks in shadow DOM using scratchblocks.render
   function renderScratchblocks() {
     console.log("Attempting to render scratchblocks...");
-    
-    // Find all unrendered scratchblocks containers
-    const containers = shadow.querySelectorAll('.scratchblocks-container:not([data-rendered="true"])');
-    if (containers.length === 0) {
+    // Since our scratchblocks code is inside the shadow DOM, get all pre.blocks elements from our shadow root.
+    const preBlocks = shadow.querySelectorAll('pre.blocks');
+    if (preBlocks.length === 0) {
       console.log("No scratchblocks containers to render");
       return;
     }
-    
-    console.log(`Found ${containers.length} scratchblocks containers to render`);
-    
-    // Load libraries first if not already loaded
-    injectScratchblocksLibraries()
-      .then(() => {
-        // Process each container
-        containers.forEach((container, index) => {
-          const codeElement = container.querySelector('pre.blocks');
-          if (!codeElement) {
-            console.error("No pre.blocks element found in container", container);
-            return;
-          }
-          
-          // Get the block code
-          const code = codeElement.textContent;
-          console.log("Rendering scratchblock with content:", code);
-          
-          try {
-            // Create a temporary div in the main document to render the block
-            const tempDiv = document.createElement('div');
-            const tempId = `temp-scratchblock-${Date.now()}-${index}`;
-            tempDiv.id = tempId;
-            document.body.appendChild(tempDiv);
-            
-            // Use the render function directly since libraries are in same context
-            const success = window.renderScratchBlock(code, tempId);
-            console.log("Direct render result:", success);
-            
-            // Wait a moment for the rendering to complete
-            setTimeout(() => {
-              // Check if the block was rendered
-              if (tempDiv.dataset.rendered === 'true' && tempDiv.firstChild) {
-                // Log the HTML content for debugging
-                console.log("Generated HTML content:", tempDiv.innerHTML);
-                console.log("First child node type:", tempDiv.firstChild.nodeName);
-                console.log("First child outerHTML:", tempDiv.firstChild.outerHTML);
-                
-                // Move the rendered SVG to the shadow DOM
-                container.innerHTML = '';
-                container.appendChild(tempDiv.firstChild.cloneNode(true));
-                container.dataset.rendered = 'true';
-                console.log("Successfully moved rendered block to shadow DOM");
-                
-                // Log the final container content
-                console.log("Container after moving block:", container.innerHTML);
-              } else {
-                console.error("Failed to render scratchblock using direct method");
-                console.log("tempDiv state:", {
-                  rendered: tempDiv.dataset.rendered,
-                  hasChild: Boolean(tempDiv.firstChild),
-                  innerHTML: tempDiv.innerHTML
-                });
-                
-                // Update the container with an error message
-                const errorDiv = document.createElement('div');
-                errorDiv.style.color = 'red';
-                errorDiv.style.padding = '5px';
-                errorDiv.style.background = '#ffe0e0';
-                errorDiv.style.border = '1px solid red';
-                errorDiv.textContent = "Failed to render Scratch block. Raw code: " + code;
-                
-                // Keep the original code and add the error message
-                container.appendChild(errorDiv);
-                container.dataset.rendered = 'true'; // Mark as "rendered" to avoid infinite retry
-              }
-              
-              // Clean up
-              document.body.removeChild(tempDiv);
-            }, 100);
-          } catch (e) {
-            console.error("Error setting up scratchblock rendering:", e);
-            
-            // Update the container with an error message
-            const errorDiv = document.createElement('div');
-            errorDiv.style.color = 'red';
-            errorDiv.style.padding = '5px';
-            errorDiv.style.background = '#ffe0e0';
-            errorDiv.style.border = '1px solid red';
-            errorDiv.textContent = "Error setting up Scratch block rendering: " + e.message + ". Raw code: " + code;
-            
-            // Keep the original code and add the error message
-            container.appendChild(errorDiv);
-            container.dataset.rendered = 'true'; // Mark as "rendered" to avoid infinite retry
-          }
+    console.log(`Found ${preBlocks.length} scratchblocks pre elements to render`);
+    preBlocks.forEach((pre) => {
+      try {
+        // Render the scratchblocks code using the library's render function.
+        const svg = scratchblocks.renderMatching(pre.textContent, {
+          style: 'scratch3',
+          languages: ['en'],
+          scale: 1
         });
-      })
-      .catch(err => {
-        console.error("Error loading libraries before rendering:", err);
-        
-        // Update all containers with an error message
-        containers.forEach(container => {
-          const codeElement = container.querySelector('pre.blocks');
-          const code = codeElement ? codeElement.textContent : "unknown";
-          
-          const errorDiv = document.createElement('div');
-          errorDiv.style.color = 'red';
-          errorDiv.style.padding = '5px';
-          errorDiv.style.background = '#ffe0e0';
-          errorDiv.style.border = '1px solid red';
-          errorDiv.textContent = "Failed to load Scratch blocks libraries. Raw code: " + code;
-          
-          // Keep the original code and add the error message
-          container.appendChild(errorDiv);
-          container.dataset.rendered = 'true'; // Mark as "rendered" to avoid infinite retry
-        });
-      });
+        // Replace the parent container's content with the rendered SVG.
+        const container = pre.parentElement;
+        container.innerHTML = '';
+        container.appendChild(svg);
+        container.dataset.rendered = 'true';
+        console.log("Successfully rendered scratchblock:", pre.textContent);
+      } catch (e) {
+        console.error("Error rendering scratchblock:", e);
+        // Update the container with an error message
+        const errorDiv = document.createElement('div');
+        errorDiv.style.color = 'red';
+        errorDiv.style.padding = '5px';
+        errorDiv.style.background = '#ffe0e0';
+        errorDiv.style.border = '1px solid red';
+        errorDiv.textContent = "Failed to render Scratch block. Raw code: " + pre.textContent;
+        pre.parentElement.appendChild(errorDiv);
+        pre.parentElement.dataset.rendered = 'true';
+      }
+    });
   }
 
   // Create container and attach a shadow DOM
@@ -772,6 +655,5 @@
     minimizedButton.style.display = "none";
   });
 
-  // Load libraries
-  injectScratchblocksLibraries();
+  // No need to load libraries dynamically as they are loaded as content scripts.
 })();
