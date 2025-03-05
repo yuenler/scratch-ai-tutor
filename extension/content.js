@@ -64,6 +64,26 @@
   // We no longer need to dynamically inject scratchblocks libraries since they are loaded via content_scripts.
   // Therefore, the injectScratchblocksLibraries() function has been removed.
 
+  // Helper function to escape HTML special characters
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+  
+  // Helper function to unescape HTML entities
+  function unescapeHtml(text) {
+    return text
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/&amp;/g, "&");
+  }
+
   // Function to render scratchblocks in shadow DOM using scratchblocks.render
   function renderScratchblocks() {
     console.log("Attempting to render scratchblocks...");
@@ -246,7 +266,7 @@
       try {
         // Render the scratchblocks code using the library's render function.
         // Instead of renderMatching, use the parse and render methods directly
-        const code = pre.textContent;
+        const code = unescapeHtml(pre.textContent);
         const doc = scratchblocks.parse(code, {
           languages: ['en']
         });
@@ -306,7 +326,7 @@
         errorDiv.style.padding = '5px';
         errorDiv.style.background = '#ffe0e0';
         errorDiv.style.border = '1px solid red';
-        errorDiv.textContent = "Failed to render Scratch block. Raw code: " + pre.textContent;
+        errorDiv.textContent = "Failed to render Scratch block. Raw code: " + unescapeHtml(pre.textContent);
         pre.parentElement.appendChild(errorDiv);
         pre.parentElement.dataset.rendered = 'true';
       }
@@ -613,20 +633,22 @@
     // Replace code blocks with scratchblocks containers
     text = text.replace(/```scratchblocks\n([\s\S]*?)\n```/g, function(match, code) {
       console.log("Found scratchblocks code block:", code);
-      return `<div class="scratchblocks-container" style="border: 2px dashed red; padding: 10px; margin: 10px 0;"><pre class="blocks">${code}</pre><div class="debug-info" style="background-color: #ffeeee; padding: 5px; font-size: 12px;">Scratch Block: "${code}" (waiting to render)</div></div>`;
+      return `<div class="scratchblocks-container" style="border: 2px dashed red; padding: 10px; margin: 10px 0;"><pre class="blocks">${escapeHtml(code)}</pre><div class="debug-info" style="background-color: #ffeeee; padding: 5px; font-size: 12px;">Scratch Block: "${escapeHtml(code)}" (waiting to render)</div></div>`;
     });
     
     // Replace other code blocks
     text = text.replace(/```(\w*)\n([\s\S]*?)\n```/g, function(match, language, code) {
       if (language === 'scratch') {
         console.log("Found scratch code block:", code);
-        return `<div class="scratchblocks-container" style="border: 2px dashed blue; padding: 10px; margin: 10px 0;"><pre class="blocks">${code}</pre><div class="debug-info" style="background-color: #eeeeff; padding: 5px; font-size: 12px;">Scratch Block: "${code}" (waiting to render)</div></div>`;
+        return `<div class="scratchblocks-container" style="border: 2px dashed blue; padding: 10px; margin: 10px 0;"><pre class="blocks">${escapeHtml(code)}</pre><div class="debug-info" style="background-color: #eeeeff; padding: 5px; font-size: 12px;">Scratch Block: "${escapeHtml(code)}" (waiting to render)</div></div>`;
       }
-      return `<pre class="code-block ${language}">${code}</pre>`;
+      return `<pre class="code-block ${language}">${escapeHtml(code)}</pre>`;
     });
     
     // Replace inline code
-    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+    text = text.replace(/`([^`]+)`/g, function(match, code) {
+      return `<code>${escapeHtml(code)}</code>`;
+    });
     
     // Replace bold text
     text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
