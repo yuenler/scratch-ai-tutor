@@ -14,6 +14,22 @@ window.ScratchAITutor.UI.createUI = function() {
   container.id = "scratch-ai-tutor-container";
   const shadow = container.attachShadow({ mode: "open" });
 
+  // Load scratchblocks library if not already loaded
+  if (typeof window.scratchblocks === 'undefined') {
+    console.log("Loading scratchblocks library...");
+    const script = document.createElement('script');
+    script.src = 'https://scratchblocks.github.io/js/scratchblocks-v3.6-min.js';
+    document.head.appendChild(script);
+    
+    script.onload = function() {
+      console.log("Scratchblocks library loaded successfully");
+    };
+    
+    script.onerror = function() {
+      console.error("Failed to load scratchblocks library");
+    };
+  }
+
   // Add styles to shadow DOM
   const style = document.createElement("style");
   style.textContent = `
@@ -122,6 +138,28 @@ window.ScratchAITutor.UI.createUI = function() {
       align-self: flex-start;
     }
     
+    /* Styles for scratchblocks */
+    pre.blocks {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 10px 0;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+    
+    pre.blocks svg {
+      max-width: 100%;
+      height: auto;
+    }
+    
+    pre.render-error {
+      background-color: #fff0f0;
+      border-left: 3px solid #ff6b6b;
+      padding: 10px;
+      font-family: monospace;
+    }
+    
     .thinking-indicator {
       display: flex;
       align-items: center;
@@ -198,11 +236,6 @@ window.ScratchAITutor.UI.createUI = function() {
     
     #sendButton:hover {
       background-color: #3373cc;
-    }
-    
-    #sendButton:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
     }
     
     #minimizedButton {
@@ -367,23 +400,36 @@ window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type) 
   
   // Parse markdown for assistant messages
   if (type === "assistant") {
+    // Check if content contains scratchblocks code
+    const hasScratchblocks = content.includes("```scratchblocks");
+    
+    // Parse markdown
     messageContent.innerHTML = window.ScratchAITutor.Markdown.parseMarkdown(content);
+    
+    // Add the message to the chat first
+    messageDiv.appendChild(messageHeader);
+    messageDiv.appendChild(messageContent);
+    chatBody.appendChild(messageDiv);
+    
     // Scroll to bottom
-    setTimeout(() => {
-      chatBody.scrollTop = chatBody.scrollHeight;
-      // Render scratchblocks if any
-      window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow);
-    }, 10);
+    chatBody.scrollTop = chatBody.scrollHeight;
+    
+    // If there are scratchblocks, render them with a slight delay to ensure DOM is updated
+    if (hasScratchblocks) {
+      console.log("Content contains scratchblocks, rendering...");
+      setTimeout(() => {
+        window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow);
+      }, 100);
+    }
   } else {
     messageContent.textContent = content;
+    messageDiv.appendChild(messageHeader);
+    messageDiv.appendChild(messageContent);
+    chatBody.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    chatBody.scrollTop = chatBody.scrollHeight;
   }
-  
-  messageDiv.appendChild(messageHeader);
-  messageDiv.appendChild(messageContent);
-  chatBody.appendChild(messageDiv);
-  
-  // Scroll to bottom
-  chatBody.scrollTop = chatBody.scrollHeight;
 };
 
 /**

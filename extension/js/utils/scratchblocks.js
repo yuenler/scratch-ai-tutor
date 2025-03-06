@@ -10,6 +10,7 @@ window.ScratchAITutor.ScratchBlocks = window.ScratchAITutor.ScratchBlocks || {};
  */
 window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
   console.log("Attempting to render scratchblocks...");
+  
   // Add scratchblocks CSS directly to shadow DOM
   if (!shadow.querySelector('#scratchblocks-style')) {
     const style = document.createElement('style');
@@ -306,8 +307,13 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
     shadow.appendChild(style);
   }
 
-  // Find all pre elements with scratchblocks class
+  // Find all pre elements with blocks class
   const preElements = shadow.querySelectorAll('pre.blocks');
+  
+  // Debug: Log all pre elements to see what's available
+  console.log("All pre elements:", shadow.querySelectorAll('pre'));
+  console.log("All message content elements:", shadow.querySelectorAll('.message-content'));
+  
   if (preElements.length === 0) {
     console.log("No scratchblocks found to render");
     return;
@@ -318,30 +324,52 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
   // Check if scratchblocks is available
   if (typeof window.scratchblocks === 'undefined') {
     console.error("scratchblocks library not found");
+    
+    // Try to load the scratchblocks library
+    const script = document.createElement('script');
+    script.src = 'https://scratchblocks.github.io/js/scratchblocks-v3.6-min.js';
+    document.head.appendChild(script);
+    
+    script.onload = function() {
+      console.log("Scratchblocks library loaded, retrying render");
+      // Try rendering again after library is loaded
+      setTimeout(() => window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow), 500);
+    };
+    
+    script.onerror = function() {
+      console.error("Failed to load scratchblocks library");
+    };
+    
     return;
   }
 
   // Render each scratchblock
-  preElements.forEach((pre) => {
+  preElements.forEach((pre, index) => {
     try {
+      console.log(`Rendering scratchblock ${index + 1}:`, pre.textContent);
+      
       // Get the code content
       const code = pre.textContent;
       
       // Clear the pre element
       pre.innerHTML = '';
+
+      console.log(code);
       
-      // Render the scratchblocks
-      const svg = window.scratchblocks.render(code, {
+      const doc = scratchblocks.parse(code, {
+        languages: ['en']
+      });
+      const svg = scratchblocks.render(doc, {
         style: 'scratch3',
-        languages: ['en'],
+        scale: 1
       });
       
       // Append the rendered SVG to the pre element
       pre.appendChild(svg);
       
-      console.log("Successfully rendered a scratchblock");
+      console.log(`Successfully rendered scratchblock ${index + 1}`);
     } catch (error) {
-      console.error("Error rendering scratchblock:", error);
+      console.error(`Error rendering scratchblock ${index + 1}:`, error);
       // If there's an error, keep the original text
       pre.classList.add('render-error');
     }

@@ -12,11 +12,19 @@ window.ScratchAITutor.Markdown = window.ScratchAITutor.Markdown || {};
 window.ScratchAITutor.Markdown.parseMarkdown = function(text) {
   if (!text) return '';
   
-  // Process code blocks with syntax highlighting
-  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (match, language, code) => {
-    // Escape HTML in the code
-    const escapedCode = window.ScratchAITutor.Utils.escapeHtml(code.trim());
-    return `<pre><code class="language-${language}">${escapedCode}</code></pre>`;
+  // Process scratchblocks code blocks first (special handling)
+  text = text.replace(/```scratchblocks\n([\s\S]*?)\n```/g, function(match, code) {
+    console.log("Found scratchblocks code block:", code);
+    return `<div class="scratchblocks-container" style="border: 2px dashed red; padding: 10px; margin: 10px 0;"><pre class="blocks">${window.ScratchAITutor.Utils.escapeHtml(code)}</pre></div>`;
+  });
+  
+  // Process other code blocks with syntax highlighting
+  text = text.replace(/```(\w*)\n([\s\S]*?)\n```/g, function(match, language, code) {
+    if (language === 'scratch') {
+      console.log("Found scratch code block:", code);
+      return `<div class="scratchblocks-container" style="border: 2px dashed blue; padding: 10px; margin: 10px 0;"><pre class="blocks">${window.ScratchAITutor.Utils.escapeHtml(code)}</pre></div>`;
+    }
+    return `<pre class="code-block ${language}">${window.ScratchAITutor.Utils.escapeHtml(code)}</pre>`;
   });
 
   // Process inline code
