@@ -45,8 +45,8 @@ window.ScratchAITutor.UI.createUI = function() {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      width: 400px;
-      max-height: 600px;
+      width: 450px;
+      height: 600px;
       background-color: white;
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -106,7 +106,7 @@ window.ScratchAITutor.UI.createUI = function() {
       flex: 1;
       overflow-y: auto;
       padding: 10px 15px;
-      max-height: 350px;
+      min-height: 400px;
     }
     
     .message {
@@ -151,6 +151,8 @@ window.ScratchAITutor.UI.createUI = function() {
     pre.blocks svg {
       max-width: 100%;
       height: auto;
+      transform: scale(0.85);
+      transform-origin: left top;
     }
     
     pre.render-error {

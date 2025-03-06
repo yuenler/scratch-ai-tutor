@@ -19,7 +19,7 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
     // Full CSS for Scratch blocks - copied from the scratchblocks library
     style.textContent = `
         .sb3-label {
-          font: 500 12pt Helvetica Neue, Helvetica, sans-serif;
+          font: 500 10pt Helvetica Neue, Helvetica, sans-serif;
           word-spacing: +1pt;
         }
         
@@ -39,7 +39,7 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
           fill: #ffff80;
         }
         .sb3-comment-label {
-          font: 400 12pt Helvetica Neue, Helvetica, sans-serif;
+          font: 400 10pt Helvetica Neue, Helvetica, sans-serif;
           fill: #000;
           word-spacing: 0;
         }
@@ -172,6 +172,22 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
         svg .sb3-literal-number,
         svg .sb3-literal-string {
           fill: #575e75;
+        }
+        
+        pre.blocks {
+          background-color: #f9f9f9;
+          border-radius: 8px;
+          padding: 10px;
+          margin: 10px 0;
+          overflow-x: auto;
+          white-space: pre-wrap;
+        }
+        
+        pre.blocks svg {
+          max-width: 100%;
+          height: auto;
+          transform: scale(0.85);
+          transform-origin: left top;
         }
       `;
       
