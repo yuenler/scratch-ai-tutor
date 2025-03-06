@@ -21,14 +21,12 @@ export default async function handler(req, res) {
         console.error('Failed to parse JSON body:', error);
       }
     }
-    const { url, question, projectToken } = body;
-    if (!url || !question) {
-      return res.status(400).json({ error: "Missing 'url' or 'question' in request body." });
+    const { projectId, question, projectToken } = body;
+    if (!projectId || !question) {
+      return res.status(400).json({ error: "Missing 'projectId' or 'question' in request body." });
     }
 
-    if (!url.includes("scratch.mit.edu")) {
-      return res.status(400).json({ error: "URL must be from scratch.mit.edu." });
-    }
+    const url = `https://scratch.mit.edu/projects/${projectId}/`;
 
     console.log("Converting URL to blocks...");
     const result = await convertScratchURLToBlocks(url, projectToken);
