@@ -10,6 +10,12 @@
       "js": [
         "lib/scratchblocks-min.js",
         "lib/translations-all.js",
+        "js/utils/utils.js",
+        "js/utils/storage.js",
+        "js/utils/markdown.js",
+        "js/utils/scratchblocks.js",
+        "js/api/api.js",
+        "js/ui/ui.js",
         "content.js"
       ]
     }
@@ -17,7 +23,7 @@
   "host_permissions": ["<all_urls>"],
   "web_accessible_resources": [
     {
-      "resources": ["lib/*"],
+      "resources": ["lib/*", "js/*"],
       "matches": ["<all_urls>"]
     }
   ],

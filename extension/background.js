@@ -120,6 +120,45 @@ function loadScratchblocksLibraries(urls) {
   });
 }
 
+// Function to send a question to the backend API
+async function sendQuestionToBackend(data) {
+  console.log("Sending question to backend API:", data);
+  
+  try {
+    // API endpoint URL
+    const apiUrl = "https://scratch-ai-tutor.vercel.app/api/scratch-ai";
+    
+    // Send the request
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+    
+    // Check if the response is ok
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("API error:", response.status, errorText);
+      return { 
+        error: `Server error (${response.status}): ${errorText || "Unknown error"}` 
+      };
+    }
+    
+    // Parse the response
+    const result = await response.json();
+    console.log("API response:", result);
+    
+    return result;
+  } catch (error) {
+    console.error("Error sending question to API:", error);
+    return { 
+      error: `Network error: ${error.message}` 
+    };
+  }
+}
+
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "executeScript") {
@@ -174,6 +213,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.error("Error executing script:", error);
       sendResponse({ success: false, error: error.message });
     });
+    
+    // Return true to indicate we'll send a response asynchronously
+    return true;
+  }
+  
+  if (request.action === "sendQuestion") {
+    // Send the question to the backend API
+    sendQuestionToBackend(request.data)
+      .then(result => {
+        sendResponse(result);
+      })
+      .catch(error => {
+        console.error("Error in sendQuestion handler:", error);
+        sendResponse({ error: error.message });
+      });
     
     // Return true to indicate we'll send a response asynchronously
     return true;
