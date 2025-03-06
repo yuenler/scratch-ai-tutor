@@ -274,6 +274,7 @@ async function getProjectFromUrl(url, providedToken = null) {
       
       if (!token) {
         console.log(`Failed to get token for project ${projectId}`);
+        console.log(details);
         return { project: null, token: null, error: "Failed to get token" };
       }
     } catch (error) {
