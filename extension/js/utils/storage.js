@@ -1,4 +1,4 @@
-// Storage utility functions for Scratch AI Tutor
+// Storage utility functions for Block Buddy
 
 // Create a namespace for our storage utilities
 window.ScratchAITutor = window.ScratchAITutor || {};

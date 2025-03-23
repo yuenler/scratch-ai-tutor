@@ -1,4 +1,4 @@
-// Markdown parsing utilities for Scratch AI Tutor
+// Markdown parsing utilities for Block Buddy
 
 // Create a namespace for our markdown utilities
 window.ScratchAITutor = window.ScratchAITutor || {};

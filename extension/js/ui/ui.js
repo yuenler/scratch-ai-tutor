@@ -1,11 +1,11 @@
-// UI-related functions and components for Scratch AI Tutor
+// UI-related functions and components for Block Buddy
 
 // Create a namespace for our UI functions
 window.ScratchAITutor = window.ScratchAITutor || {};
 window.ScratchAITutor.UI = window.ScratchAITutor.UI || {};
 
 /**
- * Create the UI components for the Scratch AI Tutor
+ * Create the UI components for the Block Buddy
  * @returns {Object} Object containing the shadow DOM and UI elements
  */
 window.ScratchAITutor.UI.createUI = function() {
@@ -81,14 +81,15 @@ window.ScratchAITutor.UI.createUI = function() {
       background: none;
       border: none;
       color: white;
-      font-size: 18px;
+      font-size: 24px;
+      font-weight: bold;
       cursor: pointer;
       padding: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 24px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
     }
     
@@ -578,16 +579,15 @@ window.ScratchAITutor.UI.createUI = function() {
   panel.id = "scratch-ai-tutor-panel";
   panel.innerHTML = `
     <div id="panel-header">
-      <h2 id="panel-title">Scratch AI Tutor</h2>
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <button id="clearChatButton" style="background: none; border: none; color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; padding: 4px 8px; border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <button class="close-button" style="position: absolute; top: 3px; left: 3px; margin: 0; border-radius: 50%;">×</button>
+        <button id="clearChatButton" style="background: none; border: none; color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; padding: 4px 8px; border-radius: 4px; margin-left: auto;">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           </svg>
           Clear Chat
         </button>
-        <button class="close-button">×</button>
       </div>
     </div>
     <div id="systemMessage">

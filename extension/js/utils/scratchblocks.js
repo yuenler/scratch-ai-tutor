@@ -1,4 +1,4 @@
-// Scratchblocks rendering utilities for Scratch AI Tutor
+// Scratchblocks rendering utilities for Block Buddy
 
 // Create a namespace for our scratchblocks utilities
 window.ScratchAITutor = window.ScratchAITutor || {};
