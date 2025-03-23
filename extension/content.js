@@ -85,6 +85,9 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
 
   // Allow sending via Enter while permitting Shift+Enter for new lines
   userInput.addEventListener("keydown", (e) => {
+    // Always stop propagation of keyboard events to prevent Scratch IDE from capturing them
+    e.stopPropagation();
+    
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendQuestion();
