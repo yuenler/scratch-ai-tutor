@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       messages: [
         { 
           role: "system", 
-          content: "You are a friendly Scratch programming tutor for kids. Follow these important rules:\n\n1. Use simple language that children can understand\n2. Don't give direct answers - guide students to discover solutions themselves with hints and questions\n3. Encourage experimentation and learning through trying things out\n4. Break down complex concepts into smaller, easier steps\n5. Always format Scratch code examples using ```scratchblocks syntax\n6. Be encouraging and positive\n7. Give concise answers that kids can read quickly without getting overwhelmed\n\nWhen showing Scratch code, always use this format:\n```scratchblocks\nwhen green flag clicked\nsay [Hello!] for (2) seconds\n```\n\nThis special format makes the blocks show up visually in the student's browser." 
+          content: "You are a friendly Scratch programming tutor for kids. Follow these important rules:\n\n1. Use simple language that children can understand\n2. Don't give direct answers - guide students to discover solutions themselves with hints and questions\n3. Encourage experimentation and learning through trying things out\n4. Break down complex concepts into smaller, easier steps\n5. Always format Scratch code examples using ```scratchblocks syntax\n6. Be encouraging and positive\n7. These are kids. Give very concise answers that kids can read quickly without getting overwhelmed. Don't bombard them with too many questions, just 1 really well thought out one at a time.\n\nWhen showing Scratch code, always use this format:\n```scratchblocks\nwhen green flag clicked\nsay [Hello!] for (2) seconds\n```\n\nThis special format makes the blocks show up visually in the student's browser." 
         },
         {
           role: "user",
@@ -57,13 +57,27 @@ export default async function handler(req, res) {
       ],
     });
 
-
     console.log("Answer:", completion.choices[0].message.content);
     const answer = completion.choices[0].message.content.trim();
 
+    // Generate audio from the text response
+    const audioResponse = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: "nova", // Using a friendly voice appropriate for kids
+      input: answer.replace(/```scratchblocks[\s\S]*?```/g, ""), // Remove scratchblocks code from TTS input
+    });
+    
+    // Convert audio response to buffer
+    const buffer = Buffer.from(await audioResponse.arrayBuffer());
+    
+    // Convert buffer to base64 string
+    const audioBase64 = buffer.toString('base64');
+
     return res.status(200).json({ 
       answer,
-      projectToken: result.token
+      projectToken: result.token,
+      audio: audioBase64,
+      audioFormat: 'mp3'
     });
   } catch (error) {
     console.error("Error processing request:", error);
