@@ -331,20 +331,157 @@ window.ScratchAITutor.UI.createUI = function() {
       display: flex;
       align-items: center;
       margin-top: 10px;
-      gap: 10px;
+      gap: 15px;
     }
     
-    .audio-play-button {
-      padding: 5px 10px;
-      border-radius: 4px;
+    .circular-play-button-container {
+      position: relative;
+      width: 40px;
+      height: 40px;
+    }
+    
+    .play-pause-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 14px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .play-triangle {
+      width: 0;
+      height: 0;
+      border-top: 7px solid transparent;
+      border-bottom: 7px solid transparent;
+      border-left: 12px solid #4c97ff;
+      margin-left: 2px;
+    }
+    
+    .pause-icon {
+      width: 14px;
+      height: 14px;
+      display: none;
+    }
+    
+    .pause-icon {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .pause-icon div {
+      width: 4px;
+      height: 14px;
       background-color: #4c97ff;
-      border: none;
-      color: white;
-      cursor: pointer;
+      display: inline-block;
+      margin-right: 4px;
     }
     
-    .audio-play-button:hover {
-      background-color: #3373cc;
+    .toggle-switch-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 20px;
+    }
+    
+    .toggle-slider::before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #4c97ff;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(16px);
+    }
+    
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #4c97ff;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(16px);
+    }
+    
+    .toggle-label {
+      font-size: 12px;
+      color: #575e75;
+      user-select: none;
+    }
+    
+    .thinking-indicator {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      color: #888;
+    }
+    
+    .thinking-dots {
+      display: flex;
+      margin-left: 5px;
+    }
+    
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #888;
+      margin: 0 2px;
+      animation: pulse 1.5s infinite;
+    }
+    
+    .dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    
+    .dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.4;
+      }
+      50% {
+        opacity: 1;
+      }
     }
   `;
   shadow.appendChild(style);
@@ -416,94 +553,270 @@ window.ScratchAITutor.UI.createAudioPlayer = function(audioBase64, audioFormat, 
   audioContainer.style.display = 'flex';
   audioContainer.style.alignItems = 'center';
   audioContainer.style.marginTop = '10px';
-  audioContainer.style.gap = '10px';
+  audioContainer.style.gap = '15px';
   
   // Create audio element
   const audio = document.createElement('audio');
   audio.src = `data:audio/${audioFormat};base64,${audioBase64}`;
   
-  // Create play/pause button
-  const playButton = document.createElement('button');
-  playButton.className = 'audio-play-button';
-  playButton.innerHTML = '▶️ Play';
-  playButton.style.padding = '5px 10px';
-  playButton.style.borderRadius = '4px';
-  playButton.style.backgroundColor = '#4c97ff';
-  playButton.style.border = 'none';
-  playButton.style.color = 'white';
-  playButton.style.cursor = 'pointer';
+  // Create the circular play button container
+  const playButtonContainer = document.createElement('div');
+  playButtonContainer.className = 'circular-play-button-container';
+  playButtonContainer.style.position = 'relative';
+  playButtonContainer.style.width = '40px';
+  playButtonContainer.style.height = '40px';
   
-  // Create autoplay toggle container
-  const autoplayContainer = document.createElement('div');
-  autoplayContainer.style.display = 'flex';
-  autoplayContainer.style.alignItems = 'center';
-  autoplayContainer.style.gap = '5px';
+  // Create the progress circle (SVG)
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("width", "40");
+  svg.setAttribute("height", "40");
+  svg.setAttribute("viewBox", "0 0 40 40");
   
-  // Create autoplay checkbox
-  const autoplayToggle = document.createElement('input');
-  autoplayToggle.type = 'checkbox';
-  autoplayToggle.id = 'autoplay-toggle';
-  autoplayToggle.checked = window.ScratchAITutor.Storage.getAutoplayPreference() || false;
+  // Background circle
+  const bgCircle = document.createElementNS(svgNS, "circle");
+  bgCircle.setAttribute("cx", "20");
+  bgCircle.setAttribute("cy", "20");
+  bgCircle.setAttribute("r", "18");
+  bgCircle.setAttribute("fill", "none");
+  bgCircle.setAttribute("stroke", "#e6e6e6");
+  bgCircle.setAttribute("stroke-width", "3");
   
-  // Create autoplay label
-  const autoplayLabel = document.createElement('label');
-  autoplayLabel.htmlFor = 'autoplay-toggle';
-  autoplayLabel.textContent = 'Autoplay';
-  autoplayLabel.style.fontSize = '12px';
-  autoplayLabel.style.color = '#575e75';
+  // Progress circle
+  const progressCircle = document.createElementNS(svgNS, "circle");
+  progressCircle.setAttribute("cx", "20");
+  progressCircle.setAttribute("cy", "20");
+  progressCircle.setAttribute("r", "18");
+  progressCircle.setAttribute("fill", "none");
+  progressCircle.setAttribute("stroke", "#4c97ff");
+  progressCircle.setAttribute("stroke-width", "3");
+  progressCircle.setAttribute("stroke-dasharray", "113");  // Circumference = 2*PI*r
+  progressCircle.setAttribute("stroke-dashoffset", "113"); // Initially, no progress
+  progressCircle.setAttribute("transform", "rotate(-90 20 20)"); // Start from top
   
-  // Add elements to container
-  autoplayContainer.appendChild(autoplayToggle);
-  autoplayContainer.appendChild(autoplayLabel);
+  svg.appendChild(bgCircle);
+  svg.appendChild(progressCircle);
+  playButtonContainer.appendChild(svg);
   
-  // Add event listener for play/pause button
-  playButton.addEventListener('click', function() {
+  // Create the play button (icon in the center)
+  const playIcon = document.createElement('div');
+  playIcon.className = 'play-pause-icon';
+  playIcon.style.position = 'absolute';
+  playIcon.style.top = '50%';
+  playIcon.style.left = '50%';
+  playIcon.style.transform = 'translate(-50%, -50%)';
+  playIcon.style.width = '14px';
+  playIcon.style.height = '14px';
+  playIcon.style.display = 'flex';
+  playIcon.style.alignItems = 'center';
+  playIcon.style.justifyContent = 'center';
+  
+  // Add play icon (triangle)
+  const playTriangle = document.createElement('div');
+  playTriangle.className = 'play-triangle';
+  playTriangle.style.width = '0';
+  playTriangle.style.height = '0';
+  playTriangle.style.borderTop = '7px solid transparent';
+  playTriangle.style.borderBottom = '7px solid transparent';
+  playTriangle.style.borderLeft = '12px solid #4c97ff';
+  playTriangle.style.marginLeft = '2px'; // Offset for visual centering
+  
+  // Create a completely new pause icon approach
+  const pauseIcon = document.createElement('div');
+  pauseIcon.className = 'pause-icon';
+  pauseIcon.style.position = 'absolute';
+  pauseIcon.style.top = '0';
+  pauseIcon.style.left = '0';
+  pauseIcon.style.width = '100%';
+  pauseIcon.style.height = '100%';
+  pauseIcon.style.display = 'flex';
+  pauseIcon.style.justifyContent = 'center';
+  pauseIcon.style.alignItems = 'center';
+  pauseIcon.style.visibility = 'hidden';
+  
+  // Create a single SVG element for the pause icon
+  const pauseSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  pauseSvg.setAttribute("width", "14");
+  pauseSvg.setAttribute("height", "14");
+  pauseSvg.setAttribute("viewBox", "0 0 14 14");
+  
+  // First pause bar
+  const rect1 = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  rect1.setAttribute("x", "2");
+  rect1.setAttribute("y", "0");
+  rect1.setAttribute("width", "4");
+  rect1.setAttribute("height", "14");
+  rect1.setAttribute("fill", "#4c97ff");
+  
+  // Second pause bar
+  const rect2 = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  rect2.setAttribute("x", "8");
+  rect2.setAttribute("y", "0");
+  rect2.setAttribute("width", "4");
+  rect2.setAttribute("height", "14");
+  rect2.setAttribute("fill", "#4c97ff");
+  
+  // Add the rectangles to the SVG
+  pauseSvg.appendChild(rect1);
+  pauseSvg.appendChild(rect2);
+  pauseIcon.appendChild(pauseSvg);
+  
+  playIcon.appendChild(playTriangle);
+  playIcon.appendChild(pauseIcon);
+  playButtonContainer.appendChild(playIcon);
+  
+  // Create toggle switch for autoplay
+  const toggleContainer = document.createElement('div');
+  toggleContainer.className = 'toggle-switch-container';
+  toggleContainer.style.display = 'flex';
+  toggleContainer.style.alignItems = 'center';
+  toggleContainer.style.gap = '8px';
+  
+  // Create the toggle switch
+  const toggleSwitch = document.createElement('label');
+  toggleSwitch.className = 'toggle-switch';
+  toggleSwitch.style.position = 'relative';
+  toggleSwitch.style.display = 'inline-block';
+  toggleSwitch.style.width = '36px';
+  toggleSwitch.style.height = '20px';
+  
+  const toggleInput = document.createElement('input');
+  toggleInput.type = 'checkbox';
+  toggleInput.checked = window.ScratchAITutor.Storage.getAutoplayPreference() || false;
+  toggleInput.style.opacity = '0';
+  toggleInput.style.width = '0';
+  toggleInput.style.height = '0';
+  
+  const toggleSlider = document.createElement('span');
+  toggleSlider.className = 'toggle-slider';
+  toggleSlider.style.position = 'absolute';
+  toggleSlider.style.cursor = 'pointer';
+  toggleSlider.style.top = '0';
+  toggleSlider.style.left = '0';
+  toggleSlider.style.right = '0';
+  toggleSlider.style.bottom = '0';
+  toggleSlider.style.backgroundColor = '#ccc';
+  toggleSlider.style.transition = '.4s';
+  toggleSlider.style.borderRadius = '20px';
+  
+  // Create the slider circle
+  const toggleCircle = document.createElement('span');
+  toggleCircle.style.position = 'absolute';
+  toggleCircle.style.content = '""';
+  toggleCircle.style.height = '16px';
+  toggleCircle.style.width = '16px';
+  toggleCircle.style.left = '2px';
+  toggleCircle.style.bottom = '2px';
+  toggleCircle.style.backgroundColor = 'white';
+  toggleCircle.style.transition = '.4s';
+  toggleCircle.style.borderRadius = '50%';
+  
+  toggleSlider.appendChild(toggleCircle);
+  toggleSwitch.appendChild(toggleInput);
+  toggleSwitch.appendChild(toggleSlider);
+  
+  // Create the label for the toggle
+  const toggleLabel = document.createElement('span');
+  toggleLabel.textContent = 'Autoplay';
+  toggleLabel.style.fontSize = '12px';
+  toggleLabel.style.color = '#575e75';
+  toggleLabel.style.userSelect = 'none';
+  
+  toggleContainer.appendChild(toggleSwitch);
+  toggleContainer.appendChild(toggleLabel);
+  
+  // Update toggle styling when checked
+  if (toggleInput.checked) {
+    toggleSlider.style.backgroundColor = '#4c97ff';
+    toggleCircle.style.transform = 'translateX(16px)';
+  }
+  
+  // Add click event to play button
+  playButtonContainer.addEventListener('click', function() {
     if (audio.paused) {
       audio.play();
-      playButton.innerHTML = '⏸️ Pause';
+      playTriangle.style.visibility = 'hidden';
+      pauseIcon.style.visibility = 'visible';
     } else {
       audio.pause();
-      playButton.innerHTML = '▶️ Play';
+      playTriangle.style.visibility = 'visible';
+      pauseIcon.style.visibility = 'hidden';
     }
   });
   
-  // Add event listener for when audio ends
+  let animationFrameId = null;
+  
+  function updateProgressCircle() {
+    if (audio.duration) {
+      const progress = audio.currentTime / audio.duration;
+      const dashOffset = 113 - (113 * progress);
+      progressCircle.setAttribute("stroke-dashoffset", dashOffset);
+      
+      if (!audio.paused) {
+        animationFrameId = requestAnimationFrame(updateProgressCircle);
+      }
+    }
+  }
+  
+  audio.addEventListener('play', function() {
+    // Start the smooth animation when playing
+    animationFrameId = requestAnimationFrame(updateProgressCircle);
+  });
+  
+  audio.addEventListener('pause', function() {
+    // Stop the animation when paused
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+  });
+  
+  // Reset when audio ends
   audio.addEventListener('ended', function() {
-    playButton.innerHTML = '▶️ Play';
+    playTriangle.style.visibility = 'visible';
+    pauseIcon.style.visibility = 'hidden';
+    progressCircle.setAttribute("stroke-dashoffset", "113");
+    
+    // Also cancel animation frame if it's still running
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
   });
   
-  // Add event listener for autoplay toggle
-  autoplayToggle.addEventListener('change', function() {
-    window.ScratchAITutor.Storage.setAutoplayPreference(autoplayToggle.checked);
+  // Toggle event for autoplay
+  toggleInput.addEventListener('change', function() {
+    window.ScratchAITutor.Storage.setAutoplayPreference(toggleInput.checked);
+    
+    // Update the toggle slider appearance
+    if (toggleInput.checked) {
+      toggleSlider.style.backgroundColor = '#4c97ff';
+      toggleCircle.style.transform = 'translateX(16px)';
+    } else {
+      toggleSlider.style.backgroundColor = '#ccc';
+      toggleCircle.style.transform = 'translateX(0)';
+    }
   });
   
-  // Append controls to container
-  audioContainer.appendChild(playButton);
-  audioContainer.appendChild(autoplayContainer);
+  // Append elements to container
+  audioContainer.appendChild(playButtonContainer);
+  audioContainer.appendChild(toggleContainer);
   
   // Auto-play if setting is enabled
-  if (autoplayToggle.checked && autoplay) {
+  if (toggleInput.checked && autoplay) {
     setTimeout(() => {
       audio.play();
-      playButton.innerHTML = '⏸️ Pause';
+      playTriangle.style.visibility = 'hidden';
+      pauseIcon.style.visibility = 'visible';
     }, 500); // Short delay to ensure DOM is ready
   }
   
   return {
     container: audioContainer,
     audio: audio,
-    playButton: playButton,
-    autoplayToggle: autoplayToggle
+    playButton: playButtonContainer,
+    autoplayToggle: toggleInput
   };
-};
-
-// Add storage functions for autoplay preference
-window.ScratchAITutor.Storage = window.ScratchAITutor.Storage || {};
-window.ScratchAITutor.Storage.getAutoplayPreference = function() {
-  return JSON.parse(localStorage.getItem('scratchAITutor_autoplay') || 'false');
-};
-window.ScratchAITutor.Storage.setAutoplayPreference = function(value) {
-  localStorage.setItem('scratchAITutor_autoplay', JSON.stringify(value));
 };
 
 /**
@@ -619,4 +932,13 @@ window.ScratchAITutor.UI.hidePanel = function(panel, minimizedButton) {
 window.ScratchAITutor.UI.showPanel = function(panel, minimizedButton) {
   panel.style.display = "flex";
   minimizedButton.style.display = "none";
+};
+
+// Add storage functions for autoplay preference
+window.ScratchAITutor.Storage = window.ScratchAITutor.Storage || {};
+window.ScratchAITutor.Storage.getAutoplayPreference = function() {
+  return JSON.parse(localStorage.getItem('scratchAITutor_autoplay') || 'false');
+};
+window.ScratchAITutor.Storage.setAutoplayPreference = function(value) {
+  localStorage.setItem('scratchAITutor_autoplay', JSON.stringify(value));
 };

@@ -50,8 +50,8 @@ window.ScratchAITutor.API.sendQuestionToAPI = function(question, projectId, onTh
       }
       
       // Save the token if provided
-      if (response.token) {
-        window.ScratchAITutor.Storage.setProjectToken(projectId, response.token);
+      if (response.projectToken) {
+        window.ScratchAITutor.Storage.setProjectToken(projectId, response.projectToken);
       }
       
       // Process the response - now passing audio data if available
