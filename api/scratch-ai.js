@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         console.error('Failed to parse JSON body:', error);
       }
     }
-    const { projectId, question, projectToken } = body;
+    const { projectId, question, projectToken, chatHistory } = body;
     if (!projectId || !question) {
       return res.status(400).json({ error: "Missing 'projectId' or 'question' in request body." });
     }
@@ -42,19 +42,37 @@ export default async function handler(req, res) {
       2
     )}\n\nHelp with this question: "${question}"`;
 
+    // Build message array for OpenAI
+    const messages = [
+      { 
+        role: "system", 
+        content: "You are a friendly Scratch programming tutor for kids. Follow these important rules:\n\n1. Use simple language that children can understand\n2. Don't give direct answers - guide students to discover solutions themselves with hints and questions\n3. Encourage experimentation and learning through trying things out\n4. Break down complex concepts into smaller, easier steps\n5. Always format Scratch code examples using ```scratchblocks syntax\n6. Be encouraging and positive\n7. These are kids. Give very concise answers that kids can read quickly without getting overwhelmed. Don't bombard them with too many questions, just 1 really well thought out one at a time.\n\nWhen showing Scratch code, always use this format:\n```scratchblocks\nwhen green flag clicked\nsay [Hello!] for (2) seconds\n```\n\nThis special format makes the blocks show up visually in the student's browser." 
+      }
+    ];
+    
+    // Add chat history if available
+    if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
+      console.log(`Adding ${chatHistory.length} messages from chat history for context`);
+      chatHistory.forEach(msg => {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          messages.push({
+            role: msg.role,
+            content: msg.content
+          });
+        }
+      });
+    }
+    
+    // Add current prompt
+    messages.push({
+      role: "user",
+      content: prompt,
+    });
+
     const openai = new OpenAI(process.env.OPENAI_API_KEY);
     const completion = await openai.chat.completions.create({
       model: "o3-mini",
-      messages: [
-        { 
-          role: "system", 
-          content: "You are a friendly Scratch programming tutor for kids. Follow these important rules:\n\n1. Use simple language that children can understand\n2. Don't give direct answers - guide students to discover solutions themselves with hints and questions\n3. Encourage experimentation and learning through trying things out\n4. Break down complex concepts into smaller, easier steps\n5. Always format Scratch code examples using ```scratchblocks syntax\n6. Be encouraging and positive\n7. These are kids. Give very concise answers that kids can read quickly without getting overwhelmed. Don't bombard them with too many questions, just 1 really well thought out one at a time.\n\nWhen showing Scratch code, always use this format:\n```scratchblocks\nwhen green flag clicked\nsay [Hello!] for (2) seconds\n```\n\nThis special format makes the blocks show up visually in the student's browser." 
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
+      messages: messages,
     });
 
     console.log("Answer:", completion.choices[0].message.content);
