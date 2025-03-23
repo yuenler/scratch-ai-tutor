@@ -58,13 +58,13 @@ export default async function handler(req, res) {
           });
         }
       });
+    } else {
+      // Add current prompt
+      messages.push({
+        role: "user",
+        content: question,
+      });
     }
-    
-    // Add current prompt
-    messages.push({
-      role: "user",
-      content: question,
-    });
 
     console.log("Messages array:", JSON.stringify(messages, null, 2));
 
