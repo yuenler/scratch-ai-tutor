@@ -506,7 +506,7 @@ window.ScratchAITutor.UI.createUI = function() {
       <button class="close-button">×</button>
     </div>
     <div id="systemMessage">
-      Hi! I'm your Scratch AI Tutor. Ask me anything about your Scratch project!
+      Hello! I'm here to help with your Scratch project. Make sure your project is shared so I can see it.
     </div>
     <div id="chatBody"></div>
     <div id="inputContainer">

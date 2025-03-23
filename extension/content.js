@@ -22,6 +22,23 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     const question = userInput.value.trim();
     if (!question) return;
     
+    // Try to autosave the project first
+    const saveButton = document.querySelector('div.save-status_save-now_c2ybV');
+    if (saveButton) {
+      console.log("Found save button, clicking to autosave project");
+      saveButton.click();
+      // Small delay to allow save to begin
+      setTimeout(() => {
+        processQuestion(question);
+      }, 300);
+    } else {
+      // No save button found, proceed normally
+      processQuestion(question);
+    }
+  }
+  
+  // Function to process the question after attempting to save
+  function processQuestion(question) {
     // Add user message to chat
     window.ScratchAITutor.UI.addMessage(chatBody, shadow, question, "user");
     
@@ -53,7 +70,12 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         // Remove thinking indicator
         thinkingIndicator.remove();
         // Add error message
-        window.ScratchAITutor.UI.addMessage(chatBody, shadow, `Error: ${error}`, "assistant");
+        console.error("Error sending question to API:", error);
+        if (error.includes("Failed to get token")) {
+          window.ScratchAITutor.UI.addMessage(chatBody, shadow, `I can't access your project. Please check if your project is set to "Share" so it's publicly viewable.`, "assistant");
+        } else {
+          window.ScratchAITutor.UI.addMessage(chatBody, shadow, `Oops! Something didn't work right. Maybe try asking me again?`, "assistant");
+        }
       }
     );
   }
