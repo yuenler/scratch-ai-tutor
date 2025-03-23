@@ -14,6 +14,7 @@
         "js/utils/storage.js",
         "js/utils/markdown.js",
         "js/utils/scratchblocks.js",
+        "js/utils/voiceRecording.js",
         "js/api/api.js",
         "js/ui/ui.js",
         "content.js"
