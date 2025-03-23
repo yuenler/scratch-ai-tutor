@@ -27,7 +27,7 @@ window.ScratchAITutor.API.sendQuestionToAPI = function(question, projectId, onTh
   
   // Add token if available
   if (token) {
-    requestData.token = token;
+    requestData.projectToken = token;
   }
   
   // Add chat history for context
