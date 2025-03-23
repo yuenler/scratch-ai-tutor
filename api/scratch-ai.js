@@ -66,6 +66,8 @@ export default async function handler(req, res) {
       content: question,
     });
 
+    console.log("Messages array:", JSON.stringify(messages, null, 2));
+
     const openai = new OpenAI(process.env.OPENAI_API_KEY);
     const completion = await openai.chat.completions.create({
       model: "o3-mini",
