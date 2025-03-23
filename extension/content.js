@@ -12,11 +12,16 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     userInput, 
     sendButton, 
     closeButton,
-    clearChatButton
+    clearChatButton,
+    voiceRecordButton
   } = window.ScratchAITutor.UI.createUI();
 
   // Add the container to the document
   document.body.appendChild(container);
+
+  // Variable to store the recorder object
+  let recorderObj = null;
+  let isRecording = false;
 
   // Function to send a question
   function sendQuestion() {
@@ -95,6 +100,85 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       }
     );
   }
+
+  // Voice recording button click - Toggle recording
+  voiceRecordButton.addEventListener("click", async () => {
+    if (!isRecording) {
+      // Start recording
+      try {
+        console.log("Starting voice recording...");
+        isRecording = true;
+        voiceRecordButton.classList.add("recording");
+        
+        // Start recording and get the recorder object
+        recorderObj = await window.ScratchAITutor.VoiceRecording.startRecording();
+      } catch (error) {
+        console.error("Error starting voice recording:", error);
+        voiceRecordButton.classList.remove("recording");
+        isRecording = false;
+        
+        // Show error message
+        window.ScratchAITutor.UI.addMessage(
+          chatBody, 
+          shadow, 
+          "Sorry, I couldn't access your microphone. Please check your microphone permissions and try again.", 
+          "assistant"
+        );
+      }
+    } else {
+      // Stop recording
+      try {
+        console.log("Stopping voice recording...");
+        voiceRecordButton.classList.remove("recording");
+        isRecording = false;
+        
+        // Show thinking indicator while transcribing
+        const thinkingIndicator = window.ScratchAITutor.UI.showThinkingIndicator(chatBody);
+        thinkingIndicator.textContent = "Transcribing audio...";
+        
+        // Stop recording and get the audio data
+        const audioBase64 = await window.ScratchAITutor.VoiceRecording.stopRecording(recorderObj);
+        
+        // Transcribe the audio
+        const transcribedText = await window.ScratchAITutor.VoiceRecording.transcribeAudio(audioBase64);
+        
+        // Remove thinking indicator
+        thinkingIndicator.remove();
+        
+        if (transcribedText) {
+          // Set the transcribed text to the input field
+          userInput.value = transcribedText;
+          
+          // Auto-resize the input field
+          userInput.style.height = "auto";
+          userInput.style.height = Math.min(userInput.scrollHeight, 100) + "px";
+          
+          // Focus the input field
+          userInput.focus();
+        } else {
+          // Show error message if transcription failed
+          window.ScratchAITutor.UI.addMessage(
+            chatBody, 
+            shadow, 
+            "Sorry, I couldn't transcribe your voice. Please try again or type your question.", 
+            "assistant"
+          );
+        }
+      } catch (error) {
+        console.error("Error stopping voice recording or transcribing:", error);
+        voiceRecordButton.classList.remove("recording");
+        isRecording = false;
+        
+        // Show error message
+        window.ScratchAITutor.UI.addMessage(
+          chatBody, 
+          shadow, 
+          "Sorry, there was an error processing your voice recording. Please try again or type your question.", 
+          "assistant"
+        );
+      }
+    }
+  });
 
   // Send button click
   sendButton.addEventListener("click", sendQuestion);

@@ -159,6 +159,45 @@ async function sendQuestionToBackend(data) {
   }
 }
 
+// Function to send audio data for transcription
+async function transcribeAudioToBackend(data) {
+  console.log("Sending audio data for transcription to backend API");
+  
+  try {
+    // API endpoint URL
+    const apiUrl = "https://scratch-ai-tutor.vercel.app/api/transcribe";
+    
+    // Send the request
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+    
+    // Check if the response is ok
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("API error:", response.status, errorText);
+      return { 
+        error: `Server error (${response.status}): ${errorText || "Unknown error"}` 
+      };
+    }
+    
+    // Parse the response
+    const result = await response.json();
+    console.log("Transcription API response:", result);
+    
+    return result;
+  } catch (error) {
+    console.error("Error sending audio for transcription:", error);
+    return { 
+      error: `Network error: ${error.message}` 
+    };
+  }
+}
+
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "executeScript") {
@@ -226,6 +265,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })
       .catch(error => {
         console.error("Error in sendQuestion handler:", error);
+        sendResponse({ error: error.message });
+      });
+    
+    // Return true to indicate we'll send a response asynchronously
+    return true;
+  }
+  
+  if (request.action === "transcribeAudio") {
+    // Send the audio data for transcription
+    transcribeAudioToBackend(request.data)
+      .then(result => {
+        sendResponse(result);
+      })
+      .catch(error => {
+        console.error("Error in transcribeAudio handler:", error);
         sendResponse({ error: error.message });
       });
     

@@ -242,6 +242,88 @@ window.ScratchAITutor.UI.createUI = function() {
       background-color: #3373cc;
     }
     
+    #voiceRecordButton {
+      background-color: #4c97ff;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      margin-left: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    #voiceRecordButton:hover {
+      background-color: #3373cc;
+    }
+    
+    #voiceRecordButton.recording {
+      background-color: #ff4c4c;
+      animation: pulse-recording 1.5s infinite;
+    }
+    
+    @keyframes pulse-recording {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+    
+    .microphone-icon {
+      width: 16px;
+      height: 16px;
+      position: relative;
+    }
+    
+    .microphone-icon:before {
+      content: "";
+      display: block;
+      width: 8px;
+      height: 14px;
+      background-color: white;
+      border-radius: 4px;
+      position: absolute;
+      top: 1px;
+      left: 4px;
+    }
+    
+    .microphone-icon:after {
+      content: "";
+      display: block;
+      width: 12px;
+      height: 6px;
+      border: 2px solid white;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      position: absolute;
+      top: -2px;
+      left: 2px;
+    }
+    
+    #recordingIndicator {
+      display: none;
+      position: absolute;
+      bottom: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(255, 76, 76, 0.8);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    
+    #voiceRecordButton.recording #recordingIndicator {
+      display: block;
+    }
+    
     #minimizedButton {
       position: fixed;
       bottom: 80px;
@@ -525,6 +607,8 @@ window.ScratchAITutor.UI.createUI = function() {
           <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="white"/>
         </svg>
       </button>
+      <button id="voiceRecordButton" class="microphone-icon"></button>
+      <div id="recordingIndicator">Recording...</div>
     </div>
   `;
   shadow.appendChild(panel);
@@ -548,6 +632,8 @@ window.ScratchAITutor.UI.createUI = function() {
   const sendButton = shadow.getElementById("sendButton");
   const closeButton = shadow.querySelector(".close-button");
   const clearChatButton = shadow.getElementById("clearChatButton");
+  const voiceRecordButton = shadow.getElementById("voiceRecordButton");
+  const recordingIndicator = shadow.getElementById("recordingIndicator");
 
   // Return the created UI elements
   return {
@@ -560,7 +646,9 @@ window.ScratchAITutor.UI.createUI = function() {
     userInput,
     sendButton,
     closeButton,
-    clearChatButton
+    clearChatButton,
+    voiceRecordButton,
+    recordingIndicator
   };
 };
 
