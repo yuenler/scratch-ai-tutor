@@ -326,7 +326,7 @@ window.ScratchAITutor.UI.createUI = function() {
       right: 20px;
       width: 60px;
       height: 60px;
-      background: linear-gradient(135deg, #4c97ff 0%, #4c6fff 100%);
+      background-color: #4c97ff;
       border-radius: 50%;
       box-shadow: 0 5px 15px rgba(76, 151, 255, 0.4);
       display: none;
