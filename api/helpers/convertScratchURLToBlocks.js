@@ -479,8 +479,6 @@ export default async function convertScratchURLToBlocks(url, token = null) {
     // If project fetch failed and we were using a provided token, try again without it
     // (the token might have expired)
     if (!result.project && token) {
-      // Wait 3 seconds to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 3000));
       console.log("Provided token failed, fetching a new one...");
       result = await getProjectFromUrl(url, null);
     }
