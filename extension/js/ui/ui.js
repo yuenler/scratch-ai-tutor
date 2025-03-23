@@ -14,6 +14,8 @@ window.ScratchAITutor.UI.createUI = function() {
   container.id = "scratch-ai-tutor-container";
   const shadow = container.attachShadow({ mode: "open" });
 
+  // Remove Font Awesome loading as it won't work with shadow DOM
+  
   // Load scratchblocks library if not already loaded
   if (typeof window.scratchblocks === 'undefined') {
     console.log("Loading scratchblocks library...");
@@ -242,43 +244,52 @@ window.ScratchAITutor.UI.createUI = function() {
     
     #minimizedButton {
       position: fixed;
-      bottom: 20px;
+      bottom: 80px;
       right: 20px;
-      width: 50px;
-      height: 50px;
-      background-color: #4c97ff;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #4c97ff 0%, #4c6fff 100%);
       border-radius: 50%;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 5px 15px rgba(76, 151, 255, 0.4);
       display: none;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       z-index: 9999;
+      transition: all 0.3s ease;
+      overflow: hidden;
+      border: none;
     }
     
     #minimizedButton:hover {
-      background-color: #3373cc;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(76, 151, 255, 0.5);
     }
     
-    .minimized-icon {
-      color: white;
-      font-size: 24px;
+    #minimizedButton:active {
+      transform: translateY(-1px);
+    }
+    
+    .scratch-cat-icon {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      padding: 15px;
+    }
+    
+    .chat-icon {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      padding: 15px;
     }
     
     .minimized-close {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background-color: #ff6680;
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
+      display: none;
     }
     
     .message-content p {
@@ -513,8 +524,11 @@ window.ScratchAITutor.UI.createUI = function() {
   const minimizedButton = document.createElement("div");
   minimizedButton.id = "minimizedButton";
   minimizedButton.innerHTML = `
-    <div class="minimized-icon">?</div>
-    <div class="minimized-close">×</div>
+    <div class="chat-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M12 1c-6.628 0-12 4.573-12 10.213 0 2.39.932 4.591 2.427 6.164l-2.427 5.623 7.563-2.26c9.495 2.598 16.437-3.251 16.437-9.527 0-5.64-5.372-10.213-12-10.213z"/>
+      </svg>
+    </div>
   `;
   shadow.appendChild(minimizedButton);
 
