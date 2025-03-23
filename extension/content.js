@@ -81,13 +81,6 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   // Clicking the minimized button reopens the panel
   minimizedButton.addEventListener("click", () => window.ScratchAITutor.UI.showPanel(panel, minimizedButton));
 
-  // The small X inside the minimized button removes the entire extension
-  const minimizedClose = minimizedButton.querySelector(".minimized-close");
-  minimizedClose.addEventListener("click", (e) => {
-    e.stopPropagation(); // Don't reopen the panel
-    container.remove();  // remove the entire extension from the DOM
-  });
-
   // Load project tokens from storage and then initialize the UI
   window.ScratchAITutor.Storage.loadProjectTokens().then(() => {
     console.log('Token loading complete, initializing UI');
