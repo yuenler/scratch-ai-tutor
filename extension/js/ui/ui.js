@@ -326,6 +326,26 @@ window.ScratchAITutor.UI.createUI = function() {
     .message-content a:hover {
       text-decoration: underline;
     }
+    
+    .audio-controls {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+      gap: 10px;
+    }
+    
+    .audio-play-button {
+      padding: 5px 10px;
+      border-radius: 4px;
+      background-color: #4c97ff;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+    
+    .audio-play-button:hover {
+      background-color: #3373cc;
+    }
   `;
   shadow.appendChild(style);
 
@@ -383,19 +403,135 @@ window.ScratchAITutor.UI.createUI = function() {
 };
 
 /**
+ * Create audio player element with controls
+ * @param {string} audioBase64 - The base64 encoded audio data
+ * @param {string} audioFormat - The audio format (e.g., 'mp3')
+ * @param {boolean} autoplay - Whether to autoplay the audio
+ * @returns {Object} Object containing audio element and controls
+ */
+window.ScratchAITutor.UI.createAudioPlayer = function(audioBase64, audioFormat, autoplay = false) {
+  // Create container for audio controls
+  const audioContainer = document.createElement('div');
+  audioContainer.className = 'audio-controls';
+  audioContainer.style.display = 'flex';
+  audioContainer.style.alignItems = 'center';
+  audioContainer.style.marginTop = '10px';
+  audioContainer.style.gap = '10px';
+  
+  // Create audio element
+  const audio = document.createElement('audio');
+  audio.src = `data:audio/${audioFormat};base64,${audioBase64}`;
+  
+  // Create play/pause button
+  const playButton = document.createElement('button');
+  playButton.className = 'audio-play-button';
+  playButton.innerHTML = '▶️ Play';
+  playButton.style.padding = '5px 10px';
+  playButton.style.borderRadius = '4px';
+  playButton.style.backgroundColor = '#4c97ff';
+  playButton.style.border = 'none';
+  playButton.style.color = 'white';
+  playButton.style.cursor = 'pointer';
+  
+  // Create autoplay toggle container
+  const autoplayContainer = document.createElement('div');
+  autoplayContainer.style.display = 'flex';
+  autoplayContainer.style.alignItems = 'center';
+  autoplayContainer.style.gap = '5px';
+  
+  // Create autoplay checkbox
+  const autoplayToggle = document.createElement('input');
+  autoplayToggle.type = 'checkbox';
+  autoplayToggle.id = 'autoplay-toggle';
+  autoplayToggle.checked = window.ScratchAITutor.Storage.getAutoplayPreference() || false;
+  
+  // Create autoplay label
+  const autoplayLabel = document.createElement('label');
+  autoplayLabel.htmlFor = 'autoplay-toggle';
+  autoplayLabel.textContent = 'Autoplay';
+  autoplayLabel.style.fontSize = '12px';
+  autoplayLabel.style.color = '#575e75';
+  
+  // Add elements to container
+  autoplayContainer.appendChild(autoplayToggle);
+  autoplayContainer.appendChild(autoplayLabel);
+  
+  // Add event listener for play/pause button
+  playButton.addEventListener('click', function() {
+    if (audio.paused) {
+      audio.play();
+      playButton.innerHTML = '⏸️ Pause';
+    } else {
+      audio.pause();
+      playButton.innerHTML = '▶️ Play';
+    }
+  });
+  
+  // Add event listener for when audio ends
+  audio.addEventListener('ended', function() {
+    playButton.innerHTML = '▶️ Play';
+  });
+  
+  // Add event listener for autoplay toggle
+  autoplayToggle.addEventListener('change', function() {
+    window.ScratchAITutor.Storage.setAutoplayPreference(autoplayToggle.checked);
+  });
+  
+  // Append controls to container
+  audioContainer.appendChild(playButton);
+  audioContainer.appendChild(autoplayContainer);
+  
+  // Auto-play if setting is enabled
+  if (autoplayToggle.checked && autoplay) {
+    setTimeout(() => {
+      audio.play();
+      playButton.innerHTML = '⏸️ Pause';
+    }, 500); // Short delay to ensure DOM is ready
+  }
+  
+  return {
+    container: audioContainer,
+    audio: audio,
+    playButton: playButton,
+    autoplayToggle: autoplayToggle
+  };
+};
+
+// Add storage functions for autoplay preference
+window.ScratchAITutor.Storage = window.ScratchAITutor.Storage || {};
+window.ScratchAITutor.Storage.getAutoplayPreference = function() {
+  return JSON.parse(localStorage.getItem('scratchAITutor_autoplay') || 'false');
+};
+window.ScratchAITutor.Storage.setAutoplayPreference = function(value) {
+  localStorage.setItem('scratchAITutor_autoplay', JSON.stringify(value));
+};
+
+/**
  * Add a message to the chat
  * @param {HTMLElement} chatBody - The chat body element
  * @param {ShadowRoot} shadow - The shadow DOM root
  * @param {string} content - The message content
  * @param {string} type - The message type (user or assistant)
+ * @param {string} audioData - The base64 encoded audio data
+ * @param {string} audioFormat - The audio format (e.g., 'mp3')
  */
-window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type) {
+window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, audioData, audioFormat) {
   const messageDiv = document.createElement("div");
   messageDiv.className = `message ${type}-message`;
   
   const messageHeader = document.createElement("div");
   messageHeader.className = "message-header";
-  messageHeader.textContent = type === "user" ? "You" : "Scratch AI Tutor";
+  
+  const messageIcon = document.createElement("div");
+  messageIcon.className = "message-icon";
+  messageIcon.textContent = type === "assistant" ? "🤖" : "👤";
+  
+  const messageTitle = document.createElement("div");
+  messageTitle.className = "message-title";
+  messageTitle.textContent = type === "assistant" ? "Scratch Helper" : "You";
+  
+  messageHeader.appendChild(messageIcon);
+  messageHeader.appendChild(messageTitle);
   
   const messageContent = document.createElement("div");
   messageContent.className = "message-content";
@@ -411,6 +547,17 @@ window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type) 
     // Add the message to the chat first
     messageDiv.appendChild(messageHeader);
     messageDiv.appendChild(messageContent);
+    
+    // Add audio player if audio data is available
+    if (audioData) {
+      const audioPlayer = window.ScratchAITutor.UI.createAudioPlayer(
+        audioData, 
+        audioFormat, 
+        true // Allow autoplay based on user preference
+      );
+      messageDiv.appendChild(audioPlayer.container);
+    }
+    
     chatBody.appendChild(messageDiv);
     
     // Scroll to bottom

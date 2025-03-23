@@ -43,11 +43,11 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       question,
       projectId,
       () => {}, // onThinking - already handled above
-      (answer) => {
+      (answer, audioData, audioFormat) => {
         // Remove thinking indicator
         thinkingIndicator.remove();
-        // Add assistant message
-        window.ScratchAITutor.UI.addMessage(chatBody, shadow, answer, "assistant");
+        // Add assistant message with audio if available
+        window.ScratchAITutor.UI.addMessage(chatBody, shadow, answer, "assistant", audioData, audioFormat);
       },
       (error) => {
         // Remove thinking indicator

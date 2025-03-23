@@ -54,8 +54,12 @@ window.ScratchAITutor.API.sendQuestionToAPI = function(question, projectId, onTh
         window.ScratchAITutor.Storage.setProjectToken(projectId, response.token);
       }
       
-      // Process the response
-      onResponse(response.answer || "Sorry, I couldn't get an answer. Please try again.");
+      // Process the response - now passing audio data if available
+      onResponse(
+        response.answer || "Sorry, I couldn't get an answer. Please try again.", 
+        response.audio || null,
+        response.audioFormat || 'mp3'
+      );
     }
   );
 };

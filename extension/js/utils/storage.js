@@ -4,6 +4,9 @@
 window.ScratchAITutor = window.ScratchAITutor || {};
 window.ScratchAITutor.Storage = window.ScratchAITutor.Storage || {};
 
+// Storage key for project tokens
+const PROJECT_TOKENS_KEY = 'scratchAITutor_projectTokens';
+
 // Store project tokens for reuse
 let projectTokens = {};
 
@@ -14,28 +17,22 @@ let projectTokens = {};
 window.ScratchAITutor.Storage.loadProjectTokens = function() {
   return new Promise((resolve) => {
     try {
-      chrome.storage.local.get(['scratchProjectTokens'], (result) => {
-        if (chrome.runtime.lastError) {
-          console.error('Error loading tokens:', chrome.runtime.lastError);
-          resolve();
-          return;
+      const storedTokens = localStorage.getItem(PROJECT_TOKENS_KEY);
+      
+      if (storedTokens) {
+        try {
+          projectTokens = JSON.parse(storedTokens);
+          console.log('Loaded project tokens from localStorage:', Object.keys(projectTokens).length);
+        } catch (e) {
+          console.error('Error parsing stored tokens:', e);
+          projectTokens = {};
         }
-        
-        if (result && result.scratchProjectTokens) {
-          try {
-            projectTokens = JSON.parse(result.scratchProjectTokens);
-            console.log('Loaded project tokens from storage:', Object.keys(projectTokens).length);
-          } catch (e) {
-            console.error('Error parsing stored tokens:', e);
-            projectTokens = {};
-          }
-        } else {
-          console.log('No saved project tokens found in storage');
-        }
-        resolve();
-      });
+      } else {
+        console.log('No saved project tokens found in localStorage');
+      }
+      resolve();
     } catch (e) {
-      console.error('Error accessing chrome storage:', e);
+      console.error('Error accessing localStorage:', e);
       resolve();
     }
   });
@@ -46,17 +43,10 @@ window.ScratchAITutor.Storage.loadProjectTokens = function() {
  */
 window.ScratchAITutor.Storage.saveProjectTokens = function() {
   try {
-    chrome.storage.local.set({
-      'scratchProjectTokens': JSON.stringify(projectTokens)
-    }, () => {
-      if (chrome.runtime.lastError) {
-        console.error('Error saving tokens:', chrome.runtime.lastError);
-      } else {
-        console.log('Project tokens saved to storage');
-      }
-    });
+    localStorage.setItem(PROJECT_TOKENS_KEY, JSON.stringify(projectTokens));
+    console.log('Project tokens saved to localStorage');
   } catch (e) {
-    console.error('Error saving to chrome storage:', e);
+    console.error('Error saving to localStorage:', e);
   }
 };
 
