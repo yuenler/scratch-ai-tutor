@@ -36,19 +36,19 @@ export default async function handler(req, res) {
     }
 
     console.log("Generating prompt...");
-    const prompt = `Using the following Scratch blocks context:\n${JSON.stringify(
+    const prompt = `Using the Scratch blocks from this project:\n${JSON.stringify(
       result.blocksText,
       null,
       2
-    )}\n\nAnswer the following question: "${question}"\n\nWhen including Scratch code examples in your response, use the scratchblocks format by wrapping code in triple backticks with 'scratchblocks' as the language identifier like this:\n\n\`\`\`scratchblocks\nwhen green flag clicked\nsay [Hello!] for (2) seconds\n\`\`\``;
+    )}\n\nHelp with this question: "${question}"`;
 
     const openai = new OpenAI(process.env.OPENAI_API_KEY);
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "o3-mini",
       messages: [
         { 
           role: "system", 
-          content: "You are a helpful assistant specializing in Scratch programming. When you provide Scratch code examples, always format them using scratchblocks markdown syntax by wrapping the code in triple backticks with 'scratchblocks' as the language identifier.\n\nFormatting guidelines:\n1. Use ```scratchblocks to start and ``` to end a code block\n2. Format blocks according to standard Scratch syntax\n3. Use correct Scratch block shapes in your descriptions\n\nExamples of properly formatted scratchblocks:\n\n```scratchblocks\nwhen green flag clicked\nforever\n  move (10) steps\n  if <touching [edge v]?> then\n    turn right (180) degrees\n  end\nend\n```\n\n```scratchblocks\nwhen [space v] key pressed\nswitch costume to [next costume v]\nplay sound [pop v] until done\nbroadcast [costume changed v]\n```\n\nThis format ensures the code will be rendered as visual Scratch blocks in the interface." 
+          content: "You are a friendly Scratch programming tutor for kids. Follow these important rules:\n\n1. Use simple language that children can understand\n2. Don't give direct answers - guide students to discover solutions themselves with hints and questions\n3. Encourage experimentation and learning through trying things out\n4. Break down complex concepts into smaller, easier steps\n5. Always format Scratch code examples using ```scratchblocks syntax\n6. Be encouraging and positive\n7. Give concise answers that kids can read quickly without getting overwhelmed\n\nWhen showing Scratch code, always use this format:\n```scratchblocks\nwhen green flag clicked\nsay [Hello!] for (2) seconds\n```\n\nThis special format makes the blocks show up visually in the student's browser." 
         },
         {
           role: "user",
