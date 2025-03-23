@@ -852,8 +852,10 @@ window.ScratchAITutor.UI.createAudioPlayer = function(audioBase64, audioFormat, 
  * @param {string} type - The message type (user or assistant)
  * @param {string} audioData - The base64 encoded audio data
  * @param {string} audioFormat - The audio format (e.g., 'mp3')
+ * @param {boolean} renderScratchblocks - Whether to render scratchblocks immediately (default: true)
+ * @returns {HTMLElement} The message content element for further operations
  */
-window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, audioData, audioFormat) {
+window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, audioData, audioFormat, renderScratchblocks = true) {
   const messageDiv = document.createElement("div");
   messageDiv.className = `message ${type}-message`;
   
@@ -901,11 +903,12 @@ window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, 
     // Scroll to bottom
     chatBody.scrollTop = chatBody.scrollHeight;
     
-    // If there are scratchblocks, render them with a slight delay to ensure DOM is updated
-    if (hasScratchblocks) {
-      console.log("Content contains scratchblocks, rendering...");
+    // If there are scratchblocks and renderScratchblocks is true, render them with a slight delay
+    if (hasScratchblocks && renderScratchblocks) {
+      console.log("Content contains scratchblocks, rendering immediately for this message...");
       setTimeout(() => {
-        window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow);
+        // Only render scratchblocks in this message container
+        window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow, messageContent);
       }, 100);
     }
   } else {
@@ -917,6 +920,9 @@ window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, 
     // Scroll to bottom
     chatBody.scrollTop = chatBody.scrollHeight;
   }
+  
+  // Return the message content element for further operations
+  return messageContent;
 };
 
 /**

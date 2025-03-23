@@ -7,9 +7,10 @@ window.ScratchAITutor.ScratchBlocks = window.ScratchAITutor.ScratchBlocks || {};
 /**
  * Function to render scratchblocks in shadow DOM using scratchblocks.render
  * @param {ShadowRoot} shadow - The shadow DOM root
+ * @param {HTMLElement} [targetContainer] - Optional target container to limit rendering to
  */
-window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
-  console.log("Attempting to render scratchblocks...");
+window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow, targetContainer = null) {
+  console.log("Attempting to render scratchblocks...", targetContainer ? "for specific container" : "for all messages");
   
   // Add scratchblocks CSS directly to shadow DOM
   if (!shadow.querySelector('#scratchblocks-style')) {
@@ -196,15 +197,23 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
     }
 
 
-  // Find all pre elements with blocks class
-  const preElements = shadow.querySelectorAll('pre.blocks');
+  // Find all pre elements with blocks class, optionally within a specific container
+  let preElements;
+  if (targetContainer) {
+    preElements = targetContainer.querySelectorAll('pre.blocks');
+    console.log(`Targeting only blocks within specific container, found: ${preElements.length}`);
+  } else {
+    preElements = shadow.querySelectorAll('pre.blocks');
+    console.log(`Targeting all blocks in shadow DOM, found: ${preElements.length}`);
+  }
   
   // Debug: Log all pre elements to see what's available
-  console.log("All pre elements:", shadow.querySelectorAll('pre'));
-  console.log("All message content elements:", shadow.querySelectorAll('.message-content'));
-  
   if (preElements.length === 0) {
     console.log("No scratchblocks found to render");
+    if (!targetContainer) {
+      console.log("All pre elements:", shadow.querySelectorAll('pre'));
+      console.log("All message content elements:", shadow.querySelectorAll('.message-content'));
+    }
     return;
   }
 
@@ -222,7 +231,7 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
     script.onload = function() {
       console.log("Scratchblocks library loaded, retrying render");
       // Try rendering again after library is loaded
-      setTimeout(() => window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow), 500);
+      setTimeout(() => window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow, targetContainer), 500);
     };
     
     script.onerror = function() {
@@ -234,8 +243,14 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
 
   // Render each scratchblock
   preElements.forEach((pre, index) => {
+    // Skip if already rendered
+    if (pre.getAttribute('data-rendered') === 'true') {
+      console.log(`Skipping already rendered scratchblock ${index + 1}`);
+      return;
+    }
+    
     try {
-      console.log(`Rendering scratchblock ${index + 1}:`, pre.textContent);
+      console.log(`Rendering scratchblock ${index + 1}:`, pre.textContent.substring(0, 50) + '...');
       
       // Get the code content
       const code = pre.textContent;
@@ -243,24 +258,25 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
       // Clear the pre element
       pre.innerHTML = '';
 
-      console.log(code);
-      
+      // Create the rendered blocks
       const doc = scratchblocks.parse(code, {
         languages: ['en']
       });
       const svg = scratchblocks.render(doc, {
-        style: 'scratch3',
-        scale: 1
+        style: 'scratch3'
       });
       
-      // Append the rendered SVG to the pre element
+      // Add the SVG to the pre element
       pre.appendChild(svg);
+      
+      // Mark as rendered to avoid re-rendering
+      pre.setAttribute('data-rendered', 'true');
       
       console.log(`Successfully rendered scratchblock ${index + 1}`);
     } catch (error) {
       console.error(`Error rendering scratchblock ${index + 1}:`, error);
-      // If there's an error, keep the original text
-      pre.classList.add('render-error');
+      // Show the error and the original code
+      pre.innerHTML = `<div class="error">Error rendering blocks: ${error.message}</div><code>${pre.textContent}</code>`;
     }
   });
 };

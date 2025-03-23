@@ -69,7 +69,15 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         thinkingIndicator.remove();
         
         // Add assistant message with audio if available
-        window.ScratchAITutor.UI.addMessage(chatBody, shadow, answer, "assistant", audioData, audioFormat);
+        window.ScratchAITutor.UI.addMessage(
+          chatBody, 
+          shadow, 
+          answer, 
+          "assistant", 
+          audioData, 
+          audioFormat,
+          true // Always render scratchblocks immediately for new messages
+        );
         
         // Add assistant response to chat history
         window.ScratchAITutor.Storage.addMessageToHistory(projectId, answer, "assistant");
@@ -155,15 +163,40 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       if (previousChat && previousChat.length > 0) {
         console.log(`Loading ${previousChat.length} previous chat messages`);
         
+        // Create containers for all messages first
+        const messageContainers = [];
+        
         // Display previous messages in the UI
         previousChat.forEach(msg => {
-          window.ScratchAITutor.UI.addMessage(
+          // Create the message in the UI but don't render scratchblocks yet
+          const messageContent = window.ScratchAITutor.UI.addMessage(
             chatBody, 
             shadow, 
             msg.content, 
-            msg.role
+            msg.role,
+            null,  // No audio data for history messages
+            null,  // No audio format for history messages
+            false  // Don't render scratchblocks yet for history messages
           );
+          
+          // Store the message content element if it's an assistant message with scratchblocks
+          if (msg.role === "assistant" && msg.content.includes("```scratchblocks")) {
+            messageContainers.push(messageContent);
+          }
         });
+        
+        // Render scratchblocks individually for each message with a delay between them
+        if (messageContainers.length > 0) {
+          console.log(`Found ${messageContainers.length} messages with scratchblocks to render`);
+          
+          // Render each container separately with a short delay between
+          messageContainers.forEach((container, index) => {
+            setTimeout(() => {
+              console.log(`Rendering scratchblocks for history message ${index + 1}`);
+              window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow, container);
+            }, 200 * (index + 1)); // Stagger rendering with 200ms between each message
+          });
+        }
         
         // Scroll to the bottom of the chat
         chatBody.scrollTop = chatBody.scrollHeight;
