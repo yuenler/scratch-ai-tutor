@@ -132,40 +132,54 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         voiceRecordButton.classList.remove("recording");
         isRecording = false;
         
-        // Show thinking indicator while transcribing
+        // First get the audio data before showing any UI indicators
+        const audioBase64 = await window.ScratchAITutor.VoiceRecording.stopRecording(recorderObj);
+        
+        // Only show thinking indicator if we successfully got audio data
         const thinkingIndicator = window.ScratchAITutor.UI.showThinkingIndicator(chatBody);
         thinkingIndicator.textContent = "Transcribing audio...";
         
-        // Stop recording and get the audio data
-        const audioBase64 = await window.ScratchAITutor.VoiceRecording.stopRecording(recorderObj);
-        
-        // Transcribe the audio
-        const transcribedText = await window.ScratchAITutor.VoiceRecording.transcribeAudio(audioBase64);
-        
-        // Remove thinking indicator
-        thinkingIndicator.remove();
-        
-        if (transcribedText) {
-          // Set the transcribed text to the input field
-          userInput.value = transcribedText;
+        try {
+          // Transcribe the audio
+          const transcribedText = await window.ScratchAITutor.VoiceRecording.transcribeAudio(audioBase64);
           
-          // Auto-resize the input field
-          userInput.style.height = "auto";
-          userInput.style.height = Math.min(userInput.scrollHeight, 100) + "px";
+          // Remove thinking indicator
+          thinkingIndicator.remove();
           
-          // Focus the input field
-          userInput.focus();
-        } else {
-          // Show error message if transcription failed
+          if (transcribedText) {
+            // Set the transcribed text to the input field
+            userInput.value = transcribedText;
+            
+            // Auto-resize the input field
+            userInput.style.height = "auto";
+            userInput.style.height = Math.min(userInput.scrollHeight, 100) + "px";
+            
+            // Focus the input field
+            userInput.focus();
+          } else {
+            // Show error message if transcription failed
+            window.ScratchAITutor.UI.addMessage(
+              chatBody, 
+              shadow, 
+              "Sorry, I couldn't transcribe your voice. Please try again or type your question.", 
+              "assistant"
+            );
+          }
+        } catch (transcriptionError) {
+          // Handle transcription errors
+          console.error("Error transcribing:", transcriptionError);
+          thinkingIndicator.remove();
+          
           window.ScratchAITutor.UI.addMessage(
             chatBody, 
             shadow, 
-            "Sorry, I couldn't transcribe your voice. Please try again or type your question.", 
+            "Sorry, there was an error transcribing your voice. Please try again or type your question.", 
             "assistant"
           );
         }
-      } catch (error) {
-        console.error("Error stopping voice recording or transcribing:", error);
+      } catch (recordingError) {
+        // Handle recording errors - no thinking indicator needed here
+        console.error("Error stopping voice recording:", recordingError);
         voiceRecordButton.classList.remove("recording");
         isRecording = false;
         
