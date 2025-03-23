@@ -186,7 +186,7 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow) {
         pre.blocks svg {
           max-width: 100%;
           height: auto;
-          transform: scale(0.85);
+          transform: scale(1.1);
           transform-origin: left top;
         }
       `;
