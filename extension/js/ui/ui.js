@@ -219,6 +219,7 @@ window.ScratchAITutor.UI.createUI = function() {
       outline: none;
       max-height: 100px;
       overflow-y: auto;
+      cursor: text;
     }
     
     #userInput:focus {
@@ -581,7 +582,7 @@ window.ScratchAITutor.UI.createUI = function() {
     <div id="panel-header">
       <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
         <button class="close-button" style="position: absolute; top: 3px; left: 3px; margin: 0; border-radius: 50%;">×</button>
-        <button id="clearChatButton" style="background: none; border: none; color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; padding: 4px 8px; border-radius: 4px; margin-left: auto;">
+        <button id="clearChatButton" style="background-color: rgba(255, 255, 255, 0.2); border: none; color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; padding: 6px 12px; border-radius: 16px; margin-left: auto; transition: background-color 0.2s ease;">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
