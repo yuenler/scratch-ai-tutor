@@ -134,14 +134,6 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       // Clear the chat UI
       chatBody.innerHTML = '';
       
-      // Add a system message to confirm clearing
-      window.ScratchAITutor.UI.addMessage(
-        chatBody, 
-        shadow, 
-        "Chat history has been cleared.", 
-        "assistant"
-      );
-      
       console.log("Chat history cleared for project ID:", currentProjectId);
     }
   });
