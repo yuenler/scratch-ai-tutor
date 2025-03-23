@@ -6,9 +6,11 @@ window.ScratchAITutor.Storage = window.ScratchAITutor.Storage || {};
 
 // Storage key for project tokens
 const PROJECT_TOKENS_KEY = 'scratchAITutor_projectTokens';
+const CHAT_HISTORY_KEY = 'scratchAITutor_chatHistory';
 
 // Store project tokens for reuse
 let projectTokens = {};
+let chatHistory = {};
 
 /**
  * Load saved tokens from storage
@@ -30,6 +32,21 @@ window.ScratchAITutor.Storage.loadProjectTokens = function() {
       } else {
         console.log('No saved project tokens found in localStorage');
       }
+
+      // Also load chat history
+      const storedChatHistory = localStorage.getItem(CHAT_HISTORY_KEY);
+      if (storedChatHistory) {
+        try {
+          chatHistory = JSON.parse(storedChatHistory);
+          console.log('Loaded chat history from localStorage:', Object.keys(chatHistory).length);
+        } catch (e) {
+          console.error('Error parsing stored chat history:', e);
+          chatHistory = {};
+        }
+      } else {
+        console.log('No saved chat history found in localStorage');
+      }
+      
       resolve();
     } catch (e) {
       console.error('Error accessing localStorage:', e);
@@ -47,6 +64,18 @@ window.ScratchAITutor.Storage.saveProjectTokens = function() {
     console.log('Project tokens saved to localStorage');
   } catch (e) {
     console.error('Error saving to localStorage:', e);
+  }
+};
+
+/**
+ * Save chat history to storage
+ */
+window.ScratchAITutor.Storage.saveChatHistory = function() {
+  try {
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
+    console.log('Chat history saved to localStorage');
+  } catch (e) {
+    console.error('Error saving chat history to localStorage:', e);
   }
 };
 
@@ -75,4 +104,51 @@ window.ScratchAITutor.Storage.setProjectToken = function(projectId, token) {
  */
 window.ScratchAITutor.Storage.getAllProjectTokens = function() {
   return projectTokens;
+};
+
+/**
+ * Get chat history for a project
+ * @param {string} projectId - The project ID
+ * @returns {Array} The chat history for the project or empty array if not found
+ */
+window.ScratchAITutor.Storage.getChatHistory = function(projectId) {
+  return chatHistory[projectId] || [];
+};
+
+/**
+ * Add a message to the chat history
+ * @param {string} projectId - The project ID
+ * @param {string} message - The message text
+ * @param {string} role - The role (user or assistant)
+ */
+window.ScratchAITutor.Storage.addMessageToHistory = function(projectId, message, role) {
+  if (!chatHistory[projectId]) {
+    chatHistory[projectId] = [];
+  }
+  
+  // Add message to history
+  chatHistory[projectId].push({
+    role: role,
+    content: message,
+    timestamp: Date.now()
+  });
+  
+  // Limit history to last 10 messages per project to avoid excessive storage
+  if (chatHistory[projectId].length > 10) {
+    chatHistory[projectId] = chatHistory[projectId].slice(-10);
+  }
+  
+  // Save updated history
+  window.ScratchAITutor.Storage.saveChatHistory();
+};
+
+/**
+ * Clear chat history for a project
+ * @param {string} projectId - The project ID
+ */
+window.ScratchAITutor.Storage.clearChatHistory = function(projectId) {
+  if (chatHistory[projectId]) {
+    delete chatHistory[projectId];
+    window.ScratchAITutor.Storage.saveChatHistory();
+  }
 };

@@ -503,7 +503,16 @@ window.ScratchAITutor.UI.createUI = function() {
   panel.innerHTML = `
     <div id="panel-header">
       <h2 id="panel-title">Scratch AI Tutor</h2>
-      <button class="close-button">×</button>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button id="clearChatButton" style="background: none; border: none; color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; padding: 4px 8px; border-radius: 4px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          Clear Chat
+        </button>
+        <button class="close-button">×</button>
+      </div>
     </div>
     <div id="systemMessage">
       Hello! I'm here to help with your Scratch project. Make sure your project is shared so I can see it.
@@ -538,6 +547,7 @@ window.ScratchAITutor.UI.createUI = function() {
   const userInput = shadow.getElementById("userInput");
   const sendButton = shadow.getElementById("sendButton");
   const closeButton = shadow.querySelector(".close-button");
+  const clearChatButton = shadow.getElementById("clearChatButton");
 
   // Return the created UI elements
   return {
@@ -549,7 +559,8 @@ window.ScratchAITutor.UI.createUI = function() {
     chatBody,
     userInput,
     sendButton,
-    closeButton
+    closeButton,
+    clearChatButton
   };
 };
 

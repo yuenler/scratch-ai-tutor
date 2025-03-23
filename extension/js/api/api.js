@@ -30,6 +30,17 @@ window.ScratchAITutor.API.sendQuestionToAPI = function(question, projectId, onTh
     requestData.token = token;
   }
   
+  // Add chat history for context
+  const chatHistory = window.ScratchAITutor.Storage.getChatHistory(projectId);
+  if (chatHistory && chatHistory.length > 0) {
+    requestData.chatHistory = chatHistory;
+    
+    // Debug: Log chat history being sent to backend
+    console.log("Sending chat history to backend:", JSON.stringify(chatHistory, null, 2));
+  } else {
+    console.log("No chat history available to send for project ID:", projectId);
+  }
+  
   // Send the request to the background script
   chrome.runtime.sendMessage(
     {

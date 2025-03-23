@@ -11,7 +11,8 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     chatBody, 
     userInput, 
     sendButton, 
-    closeButton 
+    closeButton,
+    clearChatButton
   } = window.ScratchAITutor.UI.createUI();
 
   // Add the container to the document
@@ -39,18 +40,21 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   
   // Function to process the question after attempting to save
   function processQuestion(question) {
-    // Add user message to chat
-    window.ScratchAITutor.UI.addMessage(chatBody, shadow, question, "user");
-    
-    // Clear input
-    userInput.value = "";
-    
     // Get project ID
     const projectId = window.ScratchAITutor.Utils.getProjectId(window.location.href);
     if (!projectId) {
       window.ScratchAITutor.UI.addMessage(chatBody, shadow, "Sorry, I couldn't identify the project ID.", "assistant");
       return;
     }
+    
+    // Add user message to chat
+    window.ScratchAITutor.UI.addMessage(chatBody, shadow, question, "user");
+    
+    // Add user message to chat history
+    window.ScratchAITutor.Storage.addMessageToHistory(projectId, question, "user");
+    
+    // Clear input
+    userInput.value = "";
     
     // Show thinking indicator
     const thinkingIndicator = window.ScratchAITutor.UI.showThinkingIndicator(chatBody);
@@ -63,8 +67,12 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       (answer, audioData, audioFormat) => {
         // Remove thinking indicator
         thinkingIndicator.remove();
+        
         // Add assistant message with audio if available
         window.ScratchAITutor.UI.addMessage(chatBody, shadow, answer, "assistant", audioData, audioFormat);
+        
+        // Add assistant response to chat history
+        window.ScratchAITutor.Storage.addMessageToHistory(projectId, answer, "assistant");
       },
       (error) => {
         // Remove thinking indicator
@@ -106,6 +114,30 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   // Clicking the minimized button reopens the panel
   minimizedButton.addEventListener("click", () => window.ScratchAITutor.UI.showPanel(panel, minimizedButton));
 
+  // Clear chat button click
+  clearChatButton.addEventListener("click", () => {
+    // Get the current project ID
+    const currentProjectId = window.ScratchAITutor.Utils.getProjectId(window.location.href);
+    
+    if (currentProjectId) {
+      // Clear the chat history in storage
+      window.ScratchAITutor.Storage.clearChatHistory(currentProjectId);
+      
+      // Clear the chat UI
+      chatBody.innerHTML = '';
+      
+      // Add a system message to confirm clearing
+      window.ScratchAITutor.UI.addMessage(
+        chatBody, 
+        shadow, 
+        "Chat history has been cleared.", 
+        "assistant"
+      );
+      
+      console.log("Chat history cleared for project ID:", currentProjectId);
+    }
+  });
+
   // Load project tokens from storage and then initialize the UI
   window.ScratchAITutor.Storage.loadProjectTokens().then(() => {
     console.log('Token loading complete, initializing UI');
@@ -114,6 +146,28 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     const currentProjectId = window.ScratchAITutor.Utils.getProjectId(window.location.href);
     if (currentProjectId && window.ScratchAITutor.Storage.getProjectToken(currentProjectId)) {
       console.log(`Found existing token for project ${currentProjectId}`);
+    }
+    
+    // Load previous chat history if available
+    if (currentProjectId) {
+      const previousChat = window.ScratchAITutor.Storage.getChatHistory(currentProjectId);
+      
+      if (previousChat && previousChat.length > 0) {
+        console.log(`Loading ${previousChat.length} previous chat messages`);
+        
+        // Display previous messages in the UI
+        previousChat.forEach(msg => {
+          window.ScratchAITutor.UI.addMessage(
+            chatBody, 
+            shadow, 
+            msg.content, 
+            msg.role
+          );
+        });
+        
+        // Scroll to the bottom of the chat
+        chatBody.scrollTop = chatBody.scrollHeight;
+      }
     }
     
     // Show the panel
