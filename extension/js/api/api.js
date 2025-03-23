@@ -1,4 +1,4 @@
-// API communication functions for Block Buddy
+// API communication functions for BlockBuddy
 
 // Create a namespace for our API functions
 window.ScratchAITutor = window.ScratchAITutor || {};

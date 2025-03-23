@@ -1,4 +1,4 @@
-// Background script for Block Buddy
+// Background script for BlockBuddy
 
 // Function to render scratchblocks in the page context
 function renderScratchblocksInPage(blockData) {

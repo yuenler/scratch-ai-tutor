@@ -1,4 +1,4 @@
-// Voice recording functionality for Block Buddy
+// Voice recording functionality for BlockBuddy
 
 // Create a namespace for our voice recording functions
 window.ScratchAITutor = window.ScratchAITutor || {};

@@ -1,4 +1,4 @@
-// Utility functions for Block Buddy
+// Utility functions for BlockBuddy
 
 // Create a namespace for our utilities
 window.ScratchAITutor = window.ScratchAITutor || {};

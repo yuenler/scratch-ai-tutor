@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Block Buddy",
+  "name": "BlockBuddy",
   "version": "1.0",
   "description": "An AI tutor that helps with Scratch projects.",
   "permissions": ["activeTab", "scripting", "storage"],

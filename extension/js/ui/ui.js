@@ -1,11 +1,11 @@
-// UI-related functions and components for Block Buddy
+// UI-related functions and components for BlockBuddy
 
 // Create a namespace for our UI functions
 window.ScratchAITutor = window.ScratchAITutor || {};
 window.ScratchAITutor.UI = window.ScratchAITutor.UI || {};
 
 /**
- * Create the UI components for the Block Buddy
+ * Create the UI components for the BlockBuddy
  * @returns {Object} Object containing the shadow DOM and UI elements
  */
 window.ScratchAITutor.UI.createUI = function() {
