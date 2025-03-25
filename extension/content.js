@@ -22,6 +22,12 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   // Check saved UI state or default to minimized
   const uiState = window.BlockBuddy.Storage.getUIState();
   
+  // Ensure UI state is properly initialized
+  if (uiState.minimized === undefined) {
+    uiState.minimized = true;
+    window.BlockBuddy.Storage.saveUIState(uiState);
+  }
+  
   if (uiState.minimized) {
     // If state is minimized or this is first run (defaults to minimized)
     panel.style.display = "none";
@@ -71,10 +77,23 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     
     window.BlockBuddy.UI.snapElementToEdges(panel, snapEdges, 'panel');
     
+    // Apply saved size if available
+    if (position) {
+      if (position.size) {
+        panel.style.width = position.size.width + "px";
+        panel.style.height = position.size.height + "px";
+      } else if (position.width && position.height) {
+        panel.style.width = position.width + "px";
+        panel.style.height = position.height + "px";
+      }
+    }
+    
     // Save position if it was default
     if (!position || !position.snapEdges) {
       window.BlockBuddy.Storage.savePanelPosition({
-        snapEdges: snapEdges
+        snapEdges: snapEdges,
+        width: panel.offsetWidth,
+        height: panel.offsetHeight
       });
     }
   }

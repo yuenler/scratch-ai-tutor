@@ -187,9 +187,22 @@ window.BlockBuddy.UI.showPanel = function(panel, minimizedButton) {
   panel.style.display = "flex";
   window.BlockBuddy.UI.snapElementToEdges(panel, snapEdges, 'panel');
   
+  // Apply saved size if available
+  if (panelPosition) {
+    if (panelPosition.size) {
+      panel.style.width = panelPosition.size.width + "px";
+      panel.style.height = panelPosition.size.height + "px";
+    } else if (panelPosition.width && panelPosition.height) {
+      panel.style.width = panelPosition.width + "px";
+      panel.style.height = panelPosition.height + "px";
+    }
+  }
+  
   // Save this position
   window.BlockBuddy.Storage.savePanelPosition({
-    snapEdges: snapEdges
+    snapEdges: snapEdges,
+    width: panel.offsetWidth,
+    height: panel.offsetHeight
   });
   
   // Save the UI state as maximized
@@ -240,7 +253,7 @@ window.BlockBuddy.UI.createUI = function() {
       bottom: 20px;
       right: 20px;
       width: 450px;
-      height: 600px;
+      height: 650px;
       background-color: white;
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -251,6 +264,8 @@ window.BlockBuddy.UI.createUI = function() {
       border: 1px solid #ddd;
       overflow: hidden;
       resize: both;
+      min-width: 200px; /* Allow resizing to smaller widths */
+      min-height: 300px; /* Allow resizing to smaller heights */
     }
     
     /* Resize handles */
@@ -875,8 +890,8 @@ window.BlockBuddy.UI.createUI = function() {
   panel.style.left = "initial";
   panel.style.bottom = "20px";
   panel.style.right = "20px";
-  panel.style.width = "400px";
-  panel.style.height = "600px";
+  panel.style.width = "450px";
+  panel.style.height = "650px";
   panel.style.background = "white";
   panel.style.borderRadius = "10px";
   panel.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
@@ -1210,7 +1225,9 @@ window.BlockBuddy.UI.createUI = function() {
       
       // Save panel position
       const position = {
-        snapEdges: snapEdges
+        snapEdges: snapEdges,
+        width: panel.offsetWidth,
+        height: panel.offsetHeight
       };
       window.BlockBuddy.Storage.savePanelPosition(position);
     }
@@ -1279,8 +1296,8 @@ window.BlockBuddy.UI.createUI = function() {
       const dy = e.clientY - startY;
       
       // Minimum dimensions
-      const minWidth = 350;
-      const minHeight = 450;
+      const minWidth = 200;
+      const minHeight = 300;
       
       let newWidth = originalWidth;
       let newHeight = originalHeight;
@@ -1329,7 +1346,9 @@ window.BlockBuddy.UI.createUI = function() {
       
       // Save panel position
       const position = {
-        snapEdges: snapEdges
+        snapEdges: snapEdges,
+        width: panel.offsetWidth,
+        height: panel.offsetHeight
       };
       window.BlockBuddy.Storage.savePanelPosition(position);
     }

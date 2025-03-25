@@ -174,7 +174,16 @@ window.BlockBuddy.Storage.setAutoplayPreference = function(value) {
  * Add storage functions for panel position
  */
 window.BlockBuddy.Storage.getPanelPosition = function() {
-  return JSON.parse(localStorage.getItem(PANEL_POSITION_KEY));
+  const storedPosition = localStorage.getItem(PANEL_POSITION_KEY);
+  if (storedPosition) {
+    return JSON.parse(storedPosition);
+  } else {
+    return {
+      snapEdges: { horizontal: 'bottom', vertical: 'right' },
+      width: 450,
+      height: 650
+    };
+  }
 };
 
 window.BlockBuddy.Storage.savePanelPosition = function(position) {
@@ -207,7 +216,11 @@ window.BlockBuddy.Storage.saveMinimizedButtonPosition = function(position) {
  * Add storage functions for UI state (minimized/maximized)
  */
 window.BlockBuddy.Storage.getUIState = function() {
-  return JSON.parse(localStorage.getItem(UI_STATE_KEY) || '{"minimized": true}');
+  const state = localStorage.getItem(UI_STATE_KEY);
+  if (state) {
+    return JSON.parse(state);
+  }
+  return { minimized: true }; // Default to minimized
 };
 
 window.BlockBuddy.Storage.saveUIState = function(state) {
