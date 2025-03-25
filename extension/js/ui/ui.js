@@ -957,11 +957,11 @@ window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, 
   
   const messageIcon = document.createElement("div");
   messageIcon.className = "message-icon";
-  messageIcon.textContent = type === "assistant" ? "🤖" : "👤";
+  messageIcon.textContent = type === "assistant" ? "🧩" : "👩‍💻";
   
   const messageTitle = document.createElement("div");
   messageTitle.className = "message-title";
-  messageTitle.textContent = type === "assistant" ? "Scratch Helper" : "You";
+  messageTitle.textContent = type === "assistant" ? "BlockBuddy" : "You";
   
   messageHeader.appendChild(messageIcon);
   messageHeader.appendChild(messageTitle);

@@ -27,7 +27,7 @@
       ]
     }
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": ["*://scratch.mit.edu/projects/*"],
   "web_accessible_resources": [
     {
       "resources": ["lib/*", "js/*"],
