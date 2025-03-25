@@ -1,15 +1,15 @@
 // Utility functions for BlockBuddy
 
 // Create a namespace for our utilities
-window.ScratchAITutor = window.ScratchAITutor || {};
-window.ScratchAITutor.Utils = window.ScratchAITutor.Utils || {};
+window.BlockBuddy = window.BlockBuddy || {};
+window.BlockBuddy.Utils = window.BlockBuddy.Utils || {};
 
 /**
  * Extract project ID from URL
  * @param {string} url - The URL to extract the project ID from
  * @returns {string|null} The project ID or null if not found
  */
-window.ScratchAITutor.Utils.getProjectId = function(url) {
+window.BlockBuddy.Utils.getProjectId = function(url) {
   const match = url.match(/scratch\.mit\.edu\/projects\/(\d+)/);
   return match ? match[1] : null;
 };
@@ -19,7 +19,7 @@ window.ScratchAITutor.Utils.getProjectId = function(url) {
  * @param {string} text - The text to escape
  * @returns {string} The escaped text
  */
-window.ScratchAITutor.Utils.escapeHtml = function(text) {
+window.BlockBuddy.Utils.escapeHtml = function(text) {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -33,7 +33,7 @@ window.ScratchAITutor.Utils.escapeHtml = function(text) {
  * @param {string} text - The text to unescape
  * @returns {string} The unescaped text
  */
-window.ScratchAITutor.Utils.unescapeHtml = function(text) {
+window.BlockBuddy.Utils.unescapeHtml = function(text) {
   return text
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")

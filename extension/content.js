@@ -8,20 +8,19 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     shadow, 
     panel, 
     minimizedButton, 
-    systemMessageEl,
     chatBodyEl,
     userInputEl,
     sendButtonEl,
     closeButtonEl,
     clearChatButtonEl,
     voiceRecordButtonEl
-  } = window.ScratchAITutor.UI.createUI();
+  } = window.BlockBuddy.UI.createUI();
 
   // Add the container to the document
   document.body.appendChild(container);
 
   // Check saved UI state or default to minimized
-  const uiState = window.ScratchAITutor.Storage.getUIState();
+  const uiState = window.BlockBuddy.Storage.getUIState();
   
   if (uiState.minimized) {
     // If state is minimized or this is first run (defaults to minimized)
@@ -29,18 +28,35 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     minimizedButton.style.display = "flex";
     
     // Load or set default position for minimized button
-    const position = window.ScratchAITutor.Storage.getMinimizedButtonPosition();
+    const position = window.BlockBuddy.Storage.getMinimizedButtonPosition();
     const snapEdges = position && position.snapEdges ? 
       position.snapEdges : 
-      { horizontal: 'bottom', vertical: 'right' };
+      { horizontal: null, vertical: 'right' };
+
+    // Position the button based on snap edges
+    window.BlockBuddy.UI.snapElementToEdges(minimizedButton, snapEdges, 'minimized');
     
-    window.ScratchAITutor.UI.snapElementToEdges(minimizedButton, snapEdges, 'minimized');
+    // Apply the free-axis position if available
+    if (position && position.position !== null) {
+      if (snapEdges.horizontal === 'top' || snapEdges.horizontal === 'bottom') {
+        minimizedButton.style.left = position.position + 'px';
+      } else if (snapEdges.vertical === 'left' || snapEdges.vertical === 'right') {
+        minimizedButton.style.top = position.position + 'px';
+      }
+    } else {
+      // Default vertical position when not provided
+      minimizedButton.style.bottom = "100px";
+    }
     
     // Save position if it was default
     if (!position || !position.snapEdges) {
-      window.ScratchAITutor.Storage.saveMinimizedButtonPosition({
-        snapEdges: snapEdges
-      });
+      // Get current position after applying defaults
+      const rect = minimizedButton.getBoundingClientRect();
+      let newPosition = {
+        snapEdges: snapEdges,
+        position: snapEdges.horizontal ? rect.left : rect.top
+      };
+      window.BlockBuddy.Storage.saveMinimizedButtonPosition(newPosition);
     }
   } else {
     // If state is maximized
@@ -48,16 +64,16 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     panel.style.display = "flex";
     
     // Load or set default position for panel
-    const position = window.ScratchAITutor.Storage.getPanelPosition();
+    const position = window.BlockBuddy.Storage.getPanelPosition();
     const snapEdges = position && position.snapEdges ? 
       position.snapEdges : 
       { horizontal: 'bottom', vertical: 'right' };
     
-    window.ScratchAITutor.UI.snapElementToEdges(panel, snapEdges, 'panel');
+    window.BlockBuddy.UI.snapElementToEdges(panel, snapEdges, 'panel');
     
     // Save position if it was default
     if (!position || !position.snapEdges) {
-      window.ScratchAITutor.Storage.savePanelPosition({
+      window.BlockBuddy.Storage.savePanelPosition({
         snapEdges: snapEdges
       });
     }
@@ -90,26 +106,26 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   // Function to process the question after attempting to save
   function processQuestion(question) {
     // Get project ID
-    const projectId = window.ScratchAITutor.Utils.getProjectId(window.location.href);
+    const projectId = window.BlockBuddy.Utils.getProjectId(window.location.href);
     if (!projectId) {
-      window.ScratchAITutor.UI.addMessage(chatBodyEl, shadow, "Sorry, I couldn't identify the project ID.", "assistant");
+      window.BlockBuddy.UI.addMessage(chatBodyEl, shadow, "Sorry, I couldn't identify the project ID.", "assistant");
       return;
     }
     
     // Add user message to chat
-    window.ScratchAITutor.UI.addMessage(chatBodyEl, shadow, question, "user");
+    window.BlockBuddy.UI.addMessage(chatBodyEl, shadow, question, "user");
     
     // Add user message to chat history
-    window.ScratchAITutor.Storage.addMessageToHistory(projectId, question, "user");
+    window.BlockBuddy.Storage.addMessageToHistory(projectId, question, "user");
     
     // Clear input
     userInputEl.value = "";
     
     // Show thinking indicator
-    const thinkingIndicator = window.ScratchAITutor.UI.showThinkingIndicator(chatBodyEl);
+    const thinkingIndicator = window.BlockBuddy.UI.showThinkingIndicator(chatBodyEl);
     
     // Send question to API
-    window.ScratchAITutor.API.sendQuestionToAPI(
+    window.BlockBuddy.API.sendQuestionToAPI(
       question,
       projectId,
       () => {}, // onThinking - already handled above
@@ -118,7 +134,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         thinkingIndicator.remove();
         
         // Add assistant message with audio if available
-        window.ScratchAITutor.UI.addMessage(
+        window.BlockBuddy.UI.addMessage(
           chatBodyEl, 
           shadow, 
           answer, 
@@ -129,7 +145,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         );
         
         // Add assistant response to chat history
-        window.ScratchAITutor.Storage.addMessageToHistory(projectId, answer, "assistant");
+        window.BlockBuddy.Storage.addMessageToHistory(projectId, answer, "assistant");
       },
       (error) => {
         // Remove thinking indicator
@@ -137,9 +153,9 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         // Add error message
         console.error("Error sending question to API:", error);
         if (error.includes("Failed to get token")) {
-          window.ScratchAITutor.UI.addMessage(chatBodyEl, shadow, `I can't access your project. Please check if your project is set to "Share" so it's publicly viewable.`, "assistant");
+          window.BlockBuddy.UI.addMessage(chatBodyEl, shadow, `I can't access your project. Please check if your project is set to "Share" so it's publicly viewable.`, "assistant");
         } else {
-          window.ScratchAITutor.UI.addMessage(chatBodyEl, shadow, `Oops! Something didn't work right. Maybe try asking me again?`, "assistant");
+          window.BlockBuddy.UI.addMessage(chatBodyEl, shadow, `Oops! Something didn't work right. Maybe try asking me again?`, "assistant");
         }
       }
     );
@@ -155,14 +171,14 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         voiceRecordButtonEl.classList.add("recording");
         
         // Start recording and get the recorder object
-        recorderObj = await window.ScratchAITutor.VoiceRecording.startRecording();
+        recorderObj = await window.BlockBuddy.VoiceRecording.startRecording();
       } catch (error) {
         console.error("Error starting voice recording:", error);
         voiceRecordButtonEl.classList.remove("recording");
         isRecording = false;
         
         // Show error message
-        window.ScratchAITutor.UI.addMessage(
+        window.BlockBuddy.UI.addMessage(
           chatBodyEl, 
           shadow, 
           "Sorry, I couldn't access your microphone. Please check your microphone permissions and try again.", 
@@ -177,15 +193,15 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         isRecording = false;
         
         // First get the audio data before showing any UI indicators
-        const audioBase64 = await window.ScratchAITutor.VoiceRecording.stopRecording(recorderObj);
+        const audioBase64 = await window.BlockBuddy.VoiceRecording.stopRecording(recorderObj);
         
         // Only show thinking indicator if we successfully got audio data
-        const thinkingIndicator = window.ScratchAITutor.UI.showThinkingIndicator(chatBodyEl);
+        const thinkingIndicator = window.BlockBuddy.UI.showThinkingIndicator(chatBodyEl);
         thinkingIndicator.textContent = "Transcribing audio...";
         
         try {
           // Transcribe the audio
-          const transcribedText = await window.ScratchAITutor.VoiceRecording.transcribeAudio(audioBase64);
+          const transcribedText = await window.BlockBuddy.VoiceRecording.transcribeAudio(audioBase64);
           
           // Remove thinking indicator
           thinkingIndicator.remove();
@@ -202,7 +218,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
             userInputEl.focus();
           } else {
             // Show error message if transcription failed
-            window.ScratchAITutor.UI.addMessage(
+            window.BlockBuddy.UI.addMessage(
               chatBodyEl, 
               shadow, 
               "Sorry, I couldn't transcribe your voice. Please try again or type your question.", 
@@ -214,7 +230,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
           console.error("Error transcribing:", transcriptionError);
           thinkingIndicator.remove();
           
-          window.ScratchAITutor.UI.addMessage(
+          window.BlockBuddy.UI.addMessage(
             chatBodyEl, 
             shadow, 
             "Sorry, there was an error transcribing your voice. Please try again or type your question.", 
@@ -228,7 +244,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         isRecording = false;
         
         // Show error message
-        window.ScratchAITutor.UI.addMessage(
+        window.BlockBuddy.UI.addMessage(
           chatBodyEl, 
           shadow, 
           "Sorry, there was an error processing your voice recording. Please try again or type your question.", 
@@ -259,7 +275,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   });
 
   // Close button click
-  closeButtonEl.addEventListener("click", () => window.ScratchAITutor.UI.hidePanel(panel, minimizedButton));
+  closeButtonEl.addEventListener("click", () => window.BlockBuddy.UI.hidePanel(panel, minimizedButton));
 
   // The minimizedButton click functionality is now handled in ui.js with separate areas for
   // dragging and clicking to ensure proper separation of concerns
@@ -267,11 +283,11 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   // Clear chat button click
   clearChatButtonEl.addEventListener("click", () => {
     // Get the current project ID
-    const currentProjectId = window.ScratchAITutor.Utils.getProjectId(window.location.href);
+    const currentProjectId = window.BlockBuddy.Utils.getProjectId(window.location.href);
     
     if (currentProjectId) {
       // Clear the chat history in storage
-      window.ScratchAITutor.Storage.clearChatHistory(currentProjectId);
+      window.BlockBuddy.Storage.clearChatHistory(currentProjectId);
       
       // Clear the chat UI
       chatBodyEl.innerHTML = '';
@@ -281,18 +297,18 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   });
 
   // Load project tokens from storage and then initialize the UI
-  window.ScratchAITutor.Storage.loadProjectTokens().then(() => {
+  window.BlockBuddy.Storage.loadProjectTokens().then(() => {
     console.log('Token loading complete, initializing UI');
     
     // Now check if we have an existing token for the current project
-    const currentProjectId = window.ScratchAITutor.Utils.getProjectId(window.location.href);
-    if (currentProjectId && window.ScratchAITutor.Storage.getProjectToken(currentProjectId)) {
+    const currentProjectId = window.BlockBuddy.Utils.getProjectId(window.location.href);
+    if (currentProjectId && window.BlockBuddy.Storage.getProjectToken(currentProjectId)) {
       console.log(`Found existing token for project ${currentProjectId}`);
     }
     
     // Load previous chat history if available
     if (currentProjectId) {
-      const previousChat = window.ScratchAITutor.Storage.getChatHistory(currentProjectId);
+      const previousChat = window.BlockBuddy.Storage.getChatHistory(currentProjectId);
       
       if (previousChat && previousChat.length > 0) {
         console.log(`Loading ${previousChat.length} previous chat messages`);
@@ -303,7 +319,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         // Display previous messages in the UI
         previousChat.forEach(msg => {
           // Create the message in the UI but don't render scratchblocks yet
-          const messageContent = window.ScratchAITutor.UI.addMessage(
+          const messageContent = window.BlockBuddy.UI.addMessage(
             chatBodyEl, 
             shadow, 
             msg.content, 
@@ -327,7 +343,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
           messageContainers.forEach((container, index) => {
             setTimeout(() => {
               console.log(`Rendering scratchblocks for history message ${index + 1}`);
-              window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow, container);
+              window.BlockBuddy.ScratchBlocks.renderScratchblocks(shadow, container);
             }, 200 * (index + 1)); // Stagger rendering with 200ms between each message
           });
         }
@@ -336,8 +352,5 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
       }
     }
-    
-    // Show the panel
-    window.ScratchAITutor.UI.showPanel(panel, minimizedButton);
   });
 }

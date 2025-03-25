@@ -1,35 +1,35 @@
 // Markdown parsing utilities for BlockBuddy
 
 // Create a namespace for our markdown utilities
-window.ScratchAITutor = window.ScratchAITutor || {};
-window.ScratchAITutor.Markdown = window.ScratchAITutor.Markdown || {};
+window.BlockBuddy = window.BlockBuddy || {};
+window.BlockBuddy.Markdown = window.BlockBuddy.Markdown || {};
 
 /**
  * Parse markdown text to HTML
  * @param {string} text - The markdown text to parse
  * @returns {string} The parsed HTML
  */
-window.ScratchAITutor.Markdown.parseMarkdown = function(text) {
+window.BlockBuddy.Markdown.parseMarkdown = function(text) {
   if (!text) return '';
   
   // Process scratchblocks code blocks first (special handling)
   text = text.replace(/```scratchblocks\n([\s\S]*?)\n```/g, function(match, code) {
     console.log("Found scratchblocks code block:", code);
-    return `<div class="scratchblocks-container" style="padding: 10px; margin: 10px 0;"><pre class="blocks">${window.ScratchAITutor.Utils.escapeHtml(code)}</pre></div>`;
+    return `<div class="scratchblocks-container" style="padding: 10px; margin: 10px 0;"><pre class="blocks">${window.BlockBuddy.Utils.escapeHtml(code)}</pre></div>`;
   });
   
   // Process other code blocks with syntax highlighting
   text = text.replace(/```(\w*)\n([\s\S]*?)\n```/g, function(match, language, code) {
     if (language === 'scratch') {
       console.log("Found scratch code block:", code);
-      return `<div class="scratchblocks-container" style="padding: 10px; margin: 10px 0;"><pre class="blocks">${window.ScratchAITutor.Utils.escapeHtml(code)}</pre></div>`;
+      return `<div class="scratchblocks-container" style="padding: 10px; margin: 10px 0;"><pre class="blocks">${window.BlockBuddy.Utils.escapeHtml(code)}</pre></div>`;
     }
-    return `<pre class="code-block ${language}">${window.ScratchAITutor.Utils.escapeHtml(code)}</pre>`;
+    return `<pre class="code-block ${language}">${window.BlockBuddy.Utils.escapeHtml(code)}</pre>`;
   });
 
   // Process inline code
   text = text.replace(/`([^`]+)`/g, (match, code) => {
-    return `<code>${window.ScratchAITutor.Utils.escapeHtml(code)}</code>`;
+    return `<code>${window.BlockBuddy.Utils.escapeHtml(code)}</code>`;
   });
 
   // Process bold text

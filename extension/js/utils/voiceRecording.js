@@ -1,14 +1,14 @@
 // Voice recording functionality for BlockBuddy
 
 // Create a namespace for our voice recording functions
-window.ScratchAITutor = window.ScratchAITutor || {};
-window.ScratchAITutor.VoiceRecording = window.ScratchAITutor.VoiceRecording || {};
+window.BlockBuddy = window.BlockBuddy || {};
+window.BlockBuddy.VoiceRecording = window.BlockBuddy.VoiceRecording || {};
 
 /**
  * Start voice recording and return the recorder object
  * @returns {Promise<Object>} Promise that resolves to the recorder object
  */
-window.ScratchAITutor.VoiceRecording.startRecording = function() {
+window.BlockBuddy.VoiceRecording.startRecording = function() {
   return new Promise((resolve, reject) => {
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
@@ -51,7 +51,7 @@ window.ScratchAITutor.VoiceRecording.startRecording = function() {
  * @param {Object} recorderObj - The recorder object returned by startRecording
  * @returns {Promise<string>} Promise that resolves to the base64 encoded audio data
  */
-window.ScratchAITutor.VoiceRecording.stopRecording = function(recorderObj) {
+window.BlockBuddy.VoiceRecording.stopRecording = function(recorderObj) {
   return new Promise((resolve, reject) => {
     if (!recorderObj || !recorderObj.mediaRecorder) {
       reject(new Error("Invalid recorder object"));
@@ -91,7 +91,7 @@ window.ScratchAITutor.VoiceRecording.stopRecording = function(recorderObj) {
  * @param {string} audioBase64 - The base64 encoded audio data
  * @returns {Promise<string>} Promise that resolves to the transcribed text
  */
-window.ScratchAITutor.VoiceRecording.transcribeAudio = function(audioBase64) {
+window.BlockBuddy.VoiceRecording.transcribeAudio = function(audioBase64) {
   return new Promise((resolve, reject) => {
     console.log("Sending audio for transcription...");
     
@@ -122,20 +122,20 @@ window.ScratchAITutor.VoiceRecording.transcribeAudio = function(audioBase64) {
 };
 
 // Storage functions for voice recording preference
-window.ScratchAITutor.Storage = window.ScratchAITutor.Storage || {};
+window.BlockBuddy.Storage = window.BlockBuddy.Storage || {};
 
 /**
  * Get voice recording enabled preference
  * @returns {boolean} Whether voice recording is enabled
  */
-window.ScratchAITutor.Storage.getVoiceRecordingEnabledPreference = function() {
-  return localStorage.getItem('scratchAITutor_voiceRecordingEnabled') === 'true';
+window.BlockBuddy.Storage.getVoiceRecordingEnabledPreference = function() {
+  return localStorage.getItem('blockBuddy_voiceRecordingEnabled') === 'true';
 };
 
 /**
  * Set voice recording enabled preference
  * @param {boolean} value - Whether voice recording is enabled
  */
-window.ScratchAITutor.Storage.setVoiceRecordingEnabledPreference = function(value) {
-  localStorage.setItem('scratchAITutor_voiceRecordingEnabled', String(value));
+window.BlockBuddy.Storage.setVoiceRecordingEnabledPreference = function(value) {
+  localStorage.setItem('blockBuddy_voiceRecordingEnabled', String(value));
 };

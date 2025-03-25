@@ -1,15 +1,15 @@
 // Scratchblocks rendering utilities for BlockBuddy
 
 // Create a namespace for our scratchblocks utilities
-window.ScratchAITutor = window.ScratchAITutor || {};
-window.ScratchAITutor.ScratchBlocks = window.ScratchAITutor.ScratchBlocks || {};
+window.BlockBuddy = window.BlockBuddy || {};
+window.BlockBuddy.ScratchBlocks = window.BlockBuddy.ScratchBlocks || {};
 
 /**
  * Function to render scratchblocks in shadow DOM using scratchblocks.render
  * @param {ShadowRoot} shadow - The shadow DOM root
  * @param {HTMLElement} [targetContainer] - Optional target container to limit rendering to
  */
-window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow, targetContainer = null) {
+window.BlockBuddy.ScratchBlocks.renderScratchblocks = function(shadow, targetContainer = null) {
   console.log("Attempting to render scratchblocks...", targetContainer ? "for specific container" : "for all messages");
   
   // Add scratchblocks CSS directly to shadow DOM
@@ -230,7 +230,7 @@ window.ScratchAITutor.ScratchBlocks.renderScratchblocks = function(shadow, targe
     script.onload = function() {
       console.log("Scratchblocks library loaded, retrying render");
       // Try rendering again after library is loaded
-      setTimeout(() => window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow, targetContainer), 500);
+      setTimeout(() => window.BlockBuddy.ScratchBlocks.renderScratchblocks(shadow, targetContainer), 500);
     };
     
     script.onerror = function() {

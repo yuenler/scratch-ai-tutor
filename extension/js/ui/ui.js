@@ -1,14 +1,14 @@
 // UI-related functions and components for BlockBuddy
 
 // Create a namespace for our UI functions
-window.ScratchAITutor = window.ScratchAITutor || {};
-window.ScratchAITutor.UI = window.ScratchAITutor.UI || {};
+window.BlockBuddy = window.BlockBuddy || {};
+window.BlockBuddy.UI = window.BlockBuddy.UI || {};
 
 // Helper functions for edge snapping
 const EDGE_MARGIN = 20; // Default margin from edge for elements
 
 // Determine which edges an element should snap to
-window.ScratchAITutor.UI.getSnapEdges = function(element, elementType) {
+window.BlockBuddy.UI.getSnapEdges = function(element, elementType) {
   const rect = element.getBoundingClientRect();
   const viewport = {
     width: window.innerWidth,
@@ -41,7 +41,7 @@ window.ScratchAITutor.UI.getSnapEdges = function(element, elementType) {
 };
 
 // Position an element based on snap edges
-window.ScratchAITutor.UI.snapElementToEdges = function(element, snapEdges, elementType) {
+window.BlockBuddy.UI.snapElementToEdges = function(element, snapEdges, elementType) {
   // Get the current position BEFORE resetting styles
   const rect = element.getBoundingClientRect();
   const centerX = rect.left + rect.width / 2;
@@ -121,9 +121,9 @@ window.ScratchAITutor.UI.snapElementToEdges = function(element, snapEdges, eleme
  * @param {HTMLElement} panel - The panel element
  * @param {HTMLElement} minimizedButton - The minimized button element
  */
-window.ScratchAITutor.UI.hidePanel = function(panel, minimizedButton) {
+window.BlockBuddy.UI.hidePanel = function(panel, minimizedButton) {
   // Get the current minimized button position from storage first
-  const minimizedPosition = window.ScratchAITutor.Storage.getMinimizedButtonPosition();
+  const minimizedPosition = window.BlockBuddy.Storage.getMinimizedButtonPosition();
   
   // If we have a saved position for the minimized button, use that
   // Otherwise, default to bottom right
@@ -142,15 +142,27 @@ window.ScratchAITutor.UI.hidePanel = function(panel, minimizedButton) {
   
   // Then, position and show the minimized button at the stored position
   minimizedButton.style.display = "flex";
-  window.ScratchAITutor.UI.snapElementToEdges(minimizedButton, snapEdges, 'minimized');
+  window.BlockBuddy.UI.snapElementToEdges(minimizedButton, snapEdges, 'minimized');
   
   // Save this position
-  window.ScratchAITutor.Storage.saveMinimizedButtonPosition({
+  let position = {
     snapEdges: snapEdges
-  });
+  };
+  
+  // Store the free-axis position value
+  const rect = minimizedButton.getBoundingClientRect();
+  if (snapEdges.horizontal === 'top' || snapEdges.horizontal === 'bottom') {
+    // If snapped to top or bottom, store the left position
+    position.position = rect.left;
+  } else if (snapEdges.vertical === 'left' || snapEdges.vertical === 'right') {
+    // If snapped to left or right, store the top position
+    position.position = rect.top;
+  }
+  
+  window.BlockBuddy.Storage.saveMinimizedButtonPosition(position);
   
   // Save the UI state as minimized
-  window.ScratchAITutor.Storage.saveUIState({ minimized: true });
+  window.BlockBuddy.Storage.saveUIState({ minimized: true });
 };
 
 /**
@@ -158,9 +170,9 @@ window.ScratchAITutor.UI.hidePanel = function(panel, minimizedButton) {
  * @param {HTMLElement} panel - The panel element
  * @param {HTMLElement} minimizedButton - The minimized button element
  */
-window.ScratchAITutor.UI.showPanel = function(panel, minimizedButton) {
+window.BlockBuddy.UI.showPanel = function(panel, minimizedButton) {
   // Get the panel position from storage
-  const panelPosition = window.ScratchAITutor.Storage.getPanelPosition();
+  const panelPosition = window.BlockBuddy.Storage.getPanelPosition();
   
   // If we have a saved position for the panel, use that
   // Otherwise, default to bottom right
@@ -173,22 +185,22 @@ window.ScratchAITutor.UI.showPanel = function(panel, minimizedButton) {
   
   // Then, position and show the panel at the correct edges
   panel.style.display = "flex";
-  window.ScratchAITutor.UI.snapElementToEdges(panel, snapEdges, 'panel');
+  window.BlockBuddy.UI.snapElementToEdges(panel, snapEdges, 'panel');
   
   // Save this position
-  window.ScratchAITutor.Storage.savePanelPosition({
+  window.BlockBuddy.Storage.savePanelPosition({
     snapEdges: snapEdges
   });
   
   // Save the UI state as maximized
-  window.ScratchAITutor.Storage.saveUIState({ minimized: false });
+  window.BlockBuddy.Storage.saveUIState({ minimized: false });
 };
 
 /**
- * Create the UI for Scratch AI Tutor
+ * Create the UI for BlockBuddy
  * @returns {Object} - UI elements
  */
-window.ScratchAITutor.UI.createUI = function() {
+window.BlockBuddy.UI.createUI = function() {
   // Create container and attach a shadow DOM
   const container = document.createElement("div");
   container.id = "scratch-ai-tutor-container";
@@ -1101,7 +1113,7 @@ window.ScratchAITutor.UI.createUI = function() {
     e.preventDefault();
     e.stopPropagation();
     // Show the panel
-    window.ScratchAITutor.UI.showPanel(panel, minimizedButton);
+    window.BlockBuddy.UI.showPanel(panel, minimizedButton);
   });
   
   // Remove the existing click handler on the whole minimized button
@@ -1109,17 +1121,17 @@ window.ScratchAITutor.UI.createUI = function() {
   
   // Determine which edges an element should snap to
   const getSnapEdges = (element, elementType) => {
-    return window.ScratchAITutor.UI.getSnapEdges(element, elementType);
+    return window.BlockBuddy.UI.getSnapEdges(element, elementType);
   };
   
   // Position an element based on snap edges
   const snapElementToEdges = (element, snapEdges, elementType) => {
-    return window.ScratchAITutor.UI.snapElementToEdges(element, snapEdges, elementType);
+    return window.BlockBuddy.UI.snapElementToEdges(element, snapEdges, elementType);
   };
 
   // Get stored position and size from localStorage
   const loadPanelPosition = () => {
-    const position = window.ScratchAITutor.Storage.getPanelPosition();
+    const position = window.BlockBuddy.Storage.getPanelPosition();
     if (position && position.snapEdges) {
       snapElementToEdges(panel, position.snapEdges, 'panel');
     } else {
@@ -1129,9 +1141,16 @@ window.ScratchAITutor.UI.createUI = function() {
   };
   
   const loadMinimizedButtonPosition = () => {
-    const position = window.ScratchAITutor.Storage.getMinimizedButtonPosition();
+    const position = window.BlockBuddy.Storage.getMinimizedButtonPosition();
     if (position && position.snapEdges) {
       snapElementToEdges(minimizedButton, position.snapEdges, 'minimized');
+      if (position.position) {
+        if (position.snapEdges.horizontal === 'top' || position.snapEdges.horizontal === 'bottom') {
+          minimizedButton.style.left = position.position + 'px';
+        } else if (position.snapEdges.vertical === 'left' || position.snapEdges.vertical === 'right') {
+          minimizedButton.style.top = position.position + 'px';
+        }
+      }
     } else {
       // Default to bottom right if no saved position
       snapElementToEdges(minimizedButton, { horizontal: 'bottom', vertical: 'right' }, 'minimized');
@@ -1193,7 +1212,7 @@ window.ScratchAITutor.UI.createUI = function() {
       const position = {
         snapEdges: snapEdges
       };
-      window.ScratchAITutor.Storage.savePanelPosition(position);
+      window.BlockBuddy.Storage.savePanelPosition(position);
     }
     
     if (isDraggingMinimized) {
@@ -1208,10 +1227,21 @@ window.ScratchAITutor.UI.createUI = function() {
       snapElementToEdges(minimizedButton, snapEdges, 'minimized');
       
       // Save minimized button position
-      const position = {
+      let position = {
         snapEdges: snapEdges
       };
-      window.ScratchAITutor.Storage.saveMinimizedButtonPosition(position);
+      
+      // Store the free-axis position value
+      const rect = minimizedButton.getBoundingClientRect();
+      if (snapEdges.horizontal === 'top' || snapEdges.horizontal === 'bottom') {
+        // If snapped to top or bottom, store the left position
+        position.position = rect.left;
+      } else if (snapEdges.vertical === 'left' || snapEdges.vertical === 'right') {
+        // If snapped to left or right, store the top position
+        position.position = rect.top;
+      }
+      
+      window.BlockBuddy.Storage.saveMinimizedButtonPosition(position);
       
       // Use setTimeout to reset the wasDragging flag after a delay
       setTimeout(() => {
@@ -1301,14 +1331,14 @@ window.ScratchAITutor.UI.createUI = function() {
       const position = {
         snapEdges: snapEdges
       };
-      window.ScratchAITutor.Storage.savePanelPosition(position);
+      window.BlockBuddy.Storage.savePanelPosition(position);
     }
   });
 
   // Add event listeners for close and clear chat buttons
   closeButton.addEventListener('click', () => {
     // Hide panel and show minimized button
-    window.ScratchAITutor.UI.hidePanel(panel, minimizedButton);
+    window.BlockBuddy.UI.hidePanel(panel, minimizedButton);
   });
 
   // Return the created UI elements
@@ -1335,7 +1365,7 @@ window.ScratchAITutor.UI.createUI = function() {
  * @param {boolean} autoplay - Whether to autoplay the audio
  * @returns {Object} Object containing audio element and controls
  */
-window.ScratchAITutor.UI.createAudioPlayer = function(audioBase64, audioFormat, autoplay = false) {
+window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, autoplay = false) {
   // Create container for audio controls
   const audioContainer = document.createElement('div');
   audioContainer.className = 'audio-controls';
@@ -1471,7 +1501,7 @@ window.ScratchAITutor.UI.createAudioPlayer = function(audioBase64, audioFormat, 
   
   const toggleInput = document.createElement('input');
   toggleInput.type = 'checkbox';
-  toggleInput.checked = window.ScratchAITutor.Storage.getAutoplayPreference() || false;
+  toggleInput.checked = window.BlockBuddy.Storage.getAutoplayPreference() || false;
   toggleInput.style.opacity = '0';
   toggleInput.style.width = '0';
   toggleInput.style.height = '0';
@@ -1575,7 +1605,7 @@ window.ScratchAITutor.UI.createAudioPlayer = function(audioBase64, audioFormat, 
   
   // Toggle event for autoplay
   toggleInput.addEventListener('change', function() {
-    window.ScratchAITutor.Storage.setAutoplayPreference(toggleInput.checked);
+    window.BlockBuddy.Storage.setAutoplayPreference(toggleInput.checked);
     
     // Update the toggle slider appearance
     if (toggleInput.checked) {
@@ -1619,7 +1649,7 @@ window.ScratchAITutor.UI.createAudioPlayer = function(audioBase64, audioFormat, 
  * @param {boolean} renderScratchblocks - Whether to render scratchblocks immediately (default: true)
  * @returns {HTMLElement} The message content element for further operations
  */
-window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, audioData, audioFormat, renderScratchblocks = true) {
+window.BlockBuddy.UI.addMessage = function(chatBody, shadow, content, type, audioData, audioFormat, renderScratchblocks = true) {
   const messageDiv = document.createElement("div");
   messageDiv.className = `message ${type}-message`;
   
@@ -1646,7 +1676,7 @@ window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, 
     const hasScratchblocks = content.includes("```scratchblocks");
     
     // Parse markdown
-    messageContent.innerHTML = window.ScratchAITutor.Markdown.parseMarkdown(content);
+    messageContent.innerHTML = window.BlockBuddy.Markdown.parseMarkdown(content);
     
     // Add the message to the chat first
     messageDiv.appendChild(messageHeader);
@@ -1654,7 +1684,7 @@ window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, 
     
     // Add audio player if audio data is available
     if (audioData) {
-      const audioPlayer = window.ScratchAITutor.UI.createAudioPlayer(
+      const audioPlayer = window.BlockBuddy.UI.createAudioPlayer(
         audioData, 
         audioFormat, 
         true // Allow autoplay based on user preference
@@ -1672,7 +1702,7 @@ window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, 
       console.log("Content contains scratchblocks, rendering immediately for this message...");
       setTimeout(() => {
         // Only render scratchblocks in this message container
-        window.ScratchAITutor.ScratchBlocks.renderScratchblocks(shadow, messageContent);
+        window.BlockBuddy.ScratchBlocks.renderScratchblocks(shadow, messageContent);
       }, 100);
     }
   } else {
@@ -1694,7 +1724,7 @@ window.ScratchAITutor.UI.addMessage = function(chatBody, shadow, content, type, 
  * @param {HTMLElement} chatBody - The chat body element
  * @returns {HTMLElement} The thinking indicator element
  */
-window.ScratchAITutor.UI.showThinkingIndicator = function(chatBody) {
+window.BlockBuddy.UI.showThinkingIndicator = function(chatBody) {
   const thinkingDiv = document.createElement("div");
   thinkingDiv.className = "thinking-indicator";
   thinkingDiv.innerHTML = `
@@ -1707,45 +1737,4 @@ window.ScratchAITutor.UI.showThinkingIndicator = function(chatBody) {
   chatBody.appendChild(thinkingDiv);
   chatBody.scrollTop = chatBody.scrollHeight;
   return thinkingDiv;
-};
-
-/**
- * Add storage functions for autoplay preference
- */
-window.ScratchAITutor.Storage = window.ScratchAITutor.Storage || {};
-window.ScratchAITutor.Storage.getAutoplayPreference = function() {
-  return JSON.parse(localStorage.getItem('scratchAITutor_autoplay') || 'false');
-};
-window.ScratchAITutor.Storage.setAutoplayPreference = function(value) {
-  localStorage.setItem('scratchAITutor_autoplay', JSON.stringify(value));
-};
-
-/**
- * Add storage functions for panel position
- */
-window.ScratchAITutor.Storage.getPanelPosition = function() {
-  return JSON.parse(localStorage.getItem('scratchAITutor_panelPosition'));
-};
-window.ScratchAITutor.Storage.savePanelPosition = function(position) {
-  localStorage.setItem('scratchAITutor_panelPosition', JSON.stringify(position));
-};
-
-/**
- * Add storage functions for minimized button position
- */
-window.ScratchAITutor.Storage.getMinimizedButtonPosition = function() {
-  return JSON.parse(localStorage.getItem('scratchAITutor_minimizedButtonPosition'));
-};
-window.ScratchAITutor.Storage.saveMinimizedButtonPosition = function(position) {
-  localStorage.setItem('scratchAITutor_minimizedButtonPosition', JSON.stringify(position));
-};
-
-/**
- * Add storage functions for UI state (minimized/maximized)
- */
-window.ScratchAITutor.Storage.getUIState = function() {
-  return JSON.parse(localStorage.getItem('scratchAITutor_uiState') || '{"minimized": true}');
-};
-window.ScratchAITutor.Storage.saveUIState = function(state) {
-  localStorage.setItem('scratchAITutor_uiState', JSON.stringify(state));
 };

@@ -1,8 +1,8 @@
 // API communication functions for BlockBuddy
 
 // Create a namespace for our API functions
-window.ScratchAITutor = window.ScratchAITutor || {};
-window.ScratchAITutor.API = window.ScratchAITutor.API || {};
+window.BlockBuddy = window.BlockBuddy || {};
+window.BlockBuddy.API = window.BlockBuddy.API || {};
 
 /**
  * Send a question to the API
@@ -12,12 +12,12 @@ window.ScratchAITutor.API = window.ScratchAITutor.API || {};
  * @param {Function} onResponse - Callback for response
  * @param {Function} onError - Callback for error
  */
-window.ScratchAITutor.API.sendQuestionToAPI = function(question, projectId, onThinking, onResponse, onError) {
+window.BlockBuddy.API.sendQuestionToAPI = function(question, projectId, onThinking, onResponse, onError) {
   // Start thinking indicator
   onThinking();
   
   // Get the project token if it exists
-  const token = window.ScratchAITutor.Storage.getProjectToken(projectId);
+  const token = window.BlockBuddy.Storage.getProjectToken(projectId);
   
   // Prepare the request data
   const requestData = {
@@ -31,7 +31,7 @@ window.ScratchAITutor.API.sendQuestionToAPI = function(question, projectId, onTh
   }
   
   // Add chat history for context
-  const chatHistory = window.ScratchAITutor.Storage.getChatHistory(projectId);
+  const chatHistory = window.BlockBuddy.Storage.getChatHistory(projectId);
   if (chatHistory && chatHistory.length > 0) {
     requestData.chatHistory = chatHistory;
     
@@ -65,7 +65,7 @@ window.ScratchAITutor.API.sendQuestionToAPI = function(question, projectId, onTh
       
       // Save the token if provided
       if (response.projectToken) {
-        window.ScratchAITutor.Storage.setProjectToken(projectId, response.projectToken);
+        window.BlockBuddy.Storage.setProjectToken(projectId, response.projectToken);
       }
       
       // Process the response - now passing audio data if available

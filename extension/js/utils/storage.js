@@ -1,12 +1,18 @@
 // Storage utility functions for BlockBuddy
 
 // Create a namespace for our storage utilities
-window.ScratchAITutor = window.ScratchAITutor || {};
-window.ScratchAITutor.Storage = window.ScratchAITutor.Storage || {};
+window.BlockBuddy = window.BlockBuddy || {};
+window.BlockBuddy.Storage = window.BlockBuddy.Storage || {};
 
 // Storage key for project tokens
-const PROJECT_TOKENS_KEY = 'scratchAITutor_projectTokens';
-const CHAT_HISTORY_KEY = 'scratchAITutor_chatHistory';
+const STORAGE_PREFIX = 'blockBuddy_';
+const PROJECT_TOKENS_KEY = STORAGE_PREFIX + 'projectTokens';
+const CHAT_HISTORY_KEY = STORAGE_PREFIX + 'chatHistory';
+const AUTOPLAY_KEY = STORAGE_PREFIX + 'autoplay';
+const PANEL_POSITION_KEY = STORAGE_PREFIX + 'panelPosition';
+const MINIMIZED_BUTTON_POSITION_KEY = STORAGE_PREFIX + 'minimizedButtonPosition';
+const UI_STATE_KEY = STORAGE_PREFIX + 'uiState';
+
 
 // Store project tokens for reuse
 let projectTokens = {};
@@ -16,7 +22,7 @@ let chatHistory = {};
  * Load saved tokens from storage
  * @returns {Promise} Promise that resolves when tokens are loaded
  */
-window.ScratchAITutor.Storage.loadProjectTokens = function() {
+window.BlockBuddy.Storage.loadProjectTokens = function() {
   return new Promise((resolve) => {
     try {
       const storedTokens = localStorage.getItem(PROJECT_TOKENS_KEY);
@@ -58,7 +64,7 @@ window.ScratchAITutor.Storage.loadProjectTokens = function() {
 /**
  * Save tokens to storage
  */
-window.ScratchAITutor.Storage.saveProjectTokens = function() {
+window.BlockBuddy.Storage.saveProjectTokens = function() {
   try {
     localStorage.setItem(PROJECT_TOKENS_KEY, JSON.stringify(projectTokens));
     console.log('Project tokens saved to localStorage');
@@ -70,7 +76,7 @@ window.ScratchAITutor.Storage.saveProjectTokens = function() {
 /**
  * Save chat history to storage
  */
-window.ScratchAITutor.Storage.saveChatHistory = function() {
+window.BlockBuddy.Storage.saveChatHistory = function() {
   try {
     localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
     console.log('Chat history saved to localStorage');
@@ -84,7 +90,7 @@ window.ScratchAITutor.Storage.saveChatHistory = function() {
  * @param {string} projectId - The project ID
  * @returns {string|null} The project token or null if not found
  */
-window.ScratchAITutor.Storage.getProjectToken = function(projectId) {
+window.BlockBuddy.Storage.getProjectToken = function(projectId) {
   return projectTokens[projectId] || null;
 };
 
@@ -93,16 +99,16 @@ window.ScratchAITutor.Storage.getProjectToken = function(projectId) {
  * @param {string} projectId - The project ID
  * @param {string} token - The project token
  */
-window.ScratchAITutor.Storage.setProjectToken = function(projectId, token) {
+window.BlockBuddy.Storage.setProjectToken = function(projectId, token) {
   projectTokens[projectId] = token;
-  window.ScratchAITutor.Storage.saveProjectTokens();
+  window.BlockBuddy.Storage.saveProjectTokens();
 };
 
 /**
  * Get all project tokens
  * @returns {Object} All project tokens
  */
-window.ScratchAITutor.Storage.getAllProjectTokens = function() {
+window.BlockBuddy.Storage.getAllProjectTokens = function() {
   return projectTokens;
 };
 
@@ -111,7 +117,7 @@ window.ScratchAITutor.Storage.getAllProjectTokens = function() {
  * @param {string} projectId - The project ID
  * @returns {Array} The chat history for the project or empty array if not found
  */
-window.ScratchAITutor.Storage.getChatHistory = function(projectId) {
+window.BlockBuddy.Storage.getChatHistory = function(projectId) {
   return chatHistory[projectId] || [];
 };
 
@@ -121,7 +127,7 @@ window.ScratchAITutor.Storage.getChatHistory = function(projectId) {
  * @param {string} message - The message text
  * @param {string} role - The role (user or assistant)
  */
-window.ScratchAITutor.Storage.addMessageToHistory = function(projectId, message, role) {
+window.BlockBuddy.Storage.addMessageToHistory = function(projectId, message, role) {
   if (!chatHistory[projectId]) {
     chatHistory[projectId] = [];
   }
@@ -139,16 +145,71 @@ window.ScratchAITutor.Storage.addMessageToHistory = function(projectId, message,
   }
   
   // Save updated history
-  window.ScratchAITutor.Storage.saveChatHistory();
+  window.BlockBuddy.Storage.saveChatHistory();
 };
 
 /**
  * Clear chat history for a project
  * @param {string} projectId - The project ID
  */
-window.ScratchAITutor.Storage.clearChatHistory = function(projectId) {
+window.BlockBuddy.Storage.clearChatHistory = function(projectId) {
   if (chatHistory[projectId]) {
     delete chatHistory[projectId];
-    window.ScratchAITutor.Storage.saveChatHistory();
+    window.BlockBuddy.Storage.saveChatHistory();
   }
+};
+
+/**
+ * Add storage functions for autoplay preference
+ */
+window.BlockBuddy.Storage.getAutoplayPreference = function() {
+  return JSON.parse(localStorage.getItem(AUTOPLAY_KEY) || 'false');
+};
+
+window.BlockBuddy.Storage.setAutoplayPreference = function(value) {
+  localStorage.setItem(AUTOPLAY_KEY, JSON.stringify(value));
+};
+
+/**
+ * Add storage functions for panel position
+ */
+window.BlockBuddy.Storage.getPanelPosition = function() {
+  return JSON.parse(localStorage.getItem(PANEL_POSITION_KEY));
+};
+
+window.BlockBuddy.Storage.savePanelPosition = function(position) {
+  localStorage.setItem(PANEL_POSITION_KEY, JSON.stringify(position));
+};
+
+/**
+ * Add storage functions for minimized button position
+ */
+window.BlockBuddy.Storage.getMinimizedButtonPosition = function() {
+  const storedPosition = localStorage.getItem(MINIMIZED_BUTTON_POSITION_KEY);
+  if (storedPosition) {
+    return JSON.parse(storedPosition);
+  } else {
+    return {
+      snapEdges: { horizontal: 'bottom', vertical: 'right' },
+      position: null
+    };
+  }
+};
+
+window.BlockBuddy.Storage.saveMinimizedButtonPosition = function(position) {
+  localStorage.setItem(MINIMIZED_BUTTON_POSITION_KEY, JSON.stringify({
+    snapEdges: position.snapEdges,
+    position: position.position
+  }));
+};
+
+/**
+ * Add storage functions for UI state (minimized/maximized)
+ */
+window.BlockBuddy.Storage.getUIState = function() {
+  return JSON.parse(localStorage.getItem(UI_STATE_KEY) || '{"minimized": true}');
+};
+
+window.BlockBuddy.Storage.saveUIState = function(state) {
+  localStorage.setItem(UI_STATE_KEY, JSON.stringify(state));
 };
