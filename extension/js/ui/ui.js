@@ -4,9 +4,189 @@
 window.ScratchAITutor = window.ScratchAITutor || {};
 window.ScratchAITutor.UI = window.ScratchAITutor.UI || {};
 
+// Helper functions for edge snapping
+const EDGE_MARGIN = 20; // Default margin from edge for elements
+
+// Determine which edges an element should snap to
+window.ScratchAITutor.UI.getSnapEdges = function(element, elementType) {
+  const rect = element.getBoundingClientRect();
+  const viewport = {
+    width: window.innerWidth,
+    height: window.innerHeight
+  };
+  
+  // Calculate distances to each edge
+  const distToTop = rect.top;
+  const distToLeft = rect.left;
+  const distToRight = viewport.width - rect.right;
+  const distToBottom = viewport.height - rect.bottom;
+  
+  // Find the closest horizontal and vertical edges
+  const closestHorizontal = distToTop < distToBottom ? 'top' : 'bottom';
+  const closestVertical = distToLeft < distToRight ? 'left' : 'right';
+  
+  // For minimized button, just snap to the single closest edge
+  if (elementType === 'minimized') {
+    // Find the absolute closest edge
+    const minDist = Math.min(distToTop, distToLeft, distToRight, distToBottom);
+    
+    if (minDist === distToTop) return { horizontal: 'top', vertical: null };
+    if (minDist === distToBottom) return { horizontal: 'bottom', vertical: null };
+    if (minDist === distToLeft) return { horizontal: null, vertical: 'left' };
+    if (minDist === distToRight) return { horizontal: null, vertical: 'right' };
+  }
+  
+  // For panel, snap to both the closest horizontal and vertical edges
+  return { horizontal: closestHorizontal, vertical: closestVertical };
+};
+
+// Position an element based on snap edges
+window.ScratchAITutor.UI.snapElementToEdges = function(element, snapEdges, elementType) {
+  // Get the current position BEFORE resetting styles
+  const rect = element.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  
+  // Reset all position properties
+  element.style.top = 'auto';
+  element.style.left = 'auto';
+  element.style.right = 'auto';
+  element.style.bottom = 'auto';
+  
+  const { horizontal, vertical } = snapEdges;
+  const margin = elementType === 'minimized' ? EDGE_MARGIN : 0;
+  
+  if (elementType === 'minimized') {
+    // For minimized button, we'll keep its position on the non-snapped axis
+    if (horizontal === 'top') {
+      element.style.top = margin + 'px';
+      element.style.left = centerX - (element.offsetWidth / 2) + 'px';
+    } else if (horizontal === 'bottom') {
+      element.style.bottom = margin + 'px';
+      element.style.left = centerX - (element.offsetWidth / 2) + 'px';
+    } else if (vertical === 'left') {
+      element.style.left = margin + 'px';
+      element.style.top = centerY - (element.offsetHeight / 2) + 'px';
+    } else if (vertical === 'right') {
+      element.style.right = margin + 'px';
+      element.style.top = centerY - (element.offsetHeight / 2) + 'px';
+    }
+    
+    // Ensure the button stays within the viewport bounds
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const buttonWidth = element.offsetWidth;
+    const buttonHeight = element.offsetHeight;
+    
+    // Check horizontal position
+    if (element.style.left !== 'auto') {
+      const leftPos = parseInt(element.style.left);
+      if (leftPos < margin) {
+        element.style.left = margin + 'px';
+      } else if (leftPos + buttonWidth > viewportWidth - margin) {
+        element.style.left = (viewportWidth - buttonWidth - margin) + 'px';
+      }
+    }
+    
+    // Check vertical position
+    if (element.style.top !== 'auto') {
+      const topPos = parseInt(element.style.top);
+      if (topPos < margin) {
+        element.style.top = margin + 'px';
+      } else if (topPos + buttonHeight > viewportHeight - margin) {
+        element.style.top = (viewportHeight - buttonHeight - margin) + 'px';
+      }
+    }
+  } else {
+    // For panel, apply horizontal position
+    if (horizontal === 'top') {
+      element.style.top = margin + 'px';
+    } else if (horizontal === 'bottom') {
+      element.style.bottom = margin + 'px';
+    }
+    
+    // Apply vertical position
+    if (vertical === 'left') {
+      element.style.left = margin + 'px';
+    } else if (vertical === 'right') {
+      element.style.right = margin + 'px';
+    }
+  }
+  
+  return snapEdges;
+};
+
 /**
- * Create the UI components for the BlockBuddy
- * @returns {Object} Object containing the shadow DOM and UI elements
+ * Hide the panel and show the minimized button
+ * @param {HTMLElement} panel - The panel element
+ * @param {HTMLElement} minimizedButton - The minimized button element
+ */
+window.ScratchAITutor.UI.hidePanel = function(panel, minimizedButton) {
+  // Get the current minimized button position from storage first
+  const minimizedPosition = window.ScratchAITutor.Storage.getMinimizedButtonPosition();
+  
+  // If we have a saved position for the minimized button, use that
+  // Otherwise, default to bottom right
+  let snapEdges;
+  
+  if (minimizedPosition && minimizedPosition.snapEdges) {
+    // Use the saved position of the minimized button
+    snapEdges = minimizedPosition.snapEdges;
+  } else {
+    // Default to bottom right if no saved position
+    snapEdges = { horizontal: 'bottom', vertical: 'right' };
+  }
+  
+  // First, hide the panel
+  panel.style.display = "none";
+  
+  // Then, position and show the minimized button at the stored position
+  minimizedButton.style.display = "flex";
+  window.ScratchAITutor.UI.snapElementToEdges(minimizedButton, snapEdges, 'minimized');
+  
+  // Save this position
+  window.ScratchAITutor.Storage.saveMinimizedButtonPosition({
+    snapEdges: snapEdges
+  });
+  
+  // Save the UI state as minimized
+  window.ScratchAITutor.Storage.saveUIState({ minimized: true });
+};
+
+/**
+ * Show the panel and hide the minimized button
+ * @param {HTMLElement} panel - The panel element
+ * @param {HTMLElement} minimizedButton - The minimized button element
+ */
+window.ScratchAITutor.UI.showPanel = function(panel, minimizedButton) {
+  // Get the panel position from storage
+  const panelPosition = window.ScratchAITutor.Storage.getPanelPosition();
+  
+  // If we have a saved position for the panel, use that
+  // Otherwise, default to bottom right
+  const snapEdges = panelPosition && panelPosition.snapEdges ? 
+    panelPosition.snapEdges : 
+    { horizontal: 'bottom', vertical: 'right' };
+  
+  // First, hide the minimized button
+  minimizedButton.style.display = "none";
+  
+  // Then, position and show the panel at the correct edges
+  panel.style.display = "flex";
+  window.ScratchAITutor.UI.snapElementToEdges(panel, snapEdges, 'panel');
+  
+  // Save this position
+  window.ScratchAITutor.Storage.savePanelPosition({
+    snapEdges: snapEdges
+  });
+  
+  // Save the UI state as maximized
+  window.ScratchAITutor.Storage.saveUIState({ minimized: false });
+};
+
+/**
+ * Create the UI for Scratch AI Tutor
+ * @returns {Object} - UI elements
  */
 window.ScratchAITutor.UI.createUI = function() {
   // Create container and attach a shadow DOM
@@ -58,6 +238,78 @@ window.ScratchAITutor.UI.createUI = function() {
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
       border: 1px solid #ddd;
       overflow: hidden;
+      resize: both;
+    }
+    
+    /* Resize handles */
+    #resize-handle-e, #resize-handle-w, #resize-handle-n, #resize-handle-s,
+    #resize-handle-ne, #resize-handle-nw, #resize-handle-se, #resize-handle-sw {
+      position: absolute;
+      z-index: 10000;
+    }
+    
+    #resize-handle-e {
+      width: 8px;
+      height: calc(100% - 16px);
+      top: 8px;
+      right: 0;
+      cursor: e-resize;
+    }
+    
+    #resize-handle-w {
+      width: 8px;
+      height: calc(100% - 16px);
+      top: 8px;
+      left: 0;
+      cursor: w-resize;
+    }
+    
+    #resize-handle-n {
+      width: calc(100% - 16px);
+      height: 8px;
+      top: 0;
+      left: 8px;
+      cursor: n-resize;
+    }
+    
+    #resize-handle-s {
+      width: calc(100% - 16px);
+      height: 8px;
+      bottom: 0;
+      left: 8px;
+      cursor: s-resize;
+    }
+    
+    #resize-handle-ne {
+      width: 12px;
+      height: 12px;
+      top: 0;
+      right: 0;
+      cursor: ne-resize;
+    }
+    
+    #resize-handle-nw {
+      width: 12px;
+      height: 12px;
+      top: 0;
+      left: 0;
+      cursor: nw-resize;
+    }
+    
+    #resize-handle-se {
+      width: 12px;
+      height: 12px;
+      bottom: 0;
+      right: 0;
+      cursor: se-resize;
+    }
+    
+    #resize-handle-sw {
+      width: 12px;
+      height: 12px;
+      bottom: 0;
+      left: 0;
+      cursor: sw-resize;
     }
     
     #panel-header {
@@ -69,6 +321,7 @@ window.ScratchAITutor.UI.createUI = function() {
       color: white;
       border-top-left-radius: 10px;
       border-top-right-radius: 10px;
+      cursor: move;
     }
     
     #panel-title {
@@ -326,17 +579,19 @@ window.ScratchAITutor.UI.createUI = function() {
       right: 20px;
       width: 60px;
       height: 60px;
-      background-color: #4c97ff;
-      border-radius: 50%;
-      box-shadow: 0 5px 15px rgba(76, 151, 255, 0.4);
-      display: none;
+      background: #4c97ff;
+      border: none;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       z-index: 9999;
       transition: all 0.3s ease;
       overflow: hidden;
-      border: none;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(76, 151, 255, 0.4);
+      display: none;
     }
     
     #minimizedButton:hover {
@@ -348,13 +603,30 @@ window.ScratchAITutor.UI.createUI = function() {
       transform: translateY(-1px);
     }
     
-    .scratch-cat-icon {
+    #drag-handle {
+      width: 100%;
+      height: 25%;
       display: flex;
       justify-content: center;
       align-items: center;
+      background-color: rgba(0, 0, 0, 0.2);
+      cursor: move;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+    }
+    
+    #drag-handle:hover {
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+    
+    .click-area {
       width: 100%;
-      height: 100%;
-      padding: 15px;
+      height: 75%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      background-color: transparent;
     }
     
     .chat-icon {
@@ -364,6 +636,12 @@ window.ScratchAITutor.UI.createUI = function() {
       width: 100%;
       height: 100%;
       padding: 15px;
+    }
+    
+    .chat-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
     }
     
     .minimized-close {
@@ -575,70 +853,463 @@ window.ScratchAITutor.UI.createUI = function() {
   `;
   shadow.appendChild(style);
 
-  // Create the panel HTML structure
+  // Create panel
   const panel = document.createElement("div");
   panel.id = "scratch-ai-tutor-panel";
-  panel.innerHTML = `
-    <div id="panel-header">
-      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-        <button class="close-button" style="position: absolute; top: 3px; left: 3px; margin: 0; border-radius: 50%;">×</button>
-        <button id="clearChatButton" style="background-color: rgba(255, 255, 255, 0.2); border: none; color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; padding: 6px 12px; border-radius: 16px; margin-left: auto; transition: background-color 0.2s ease;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-          Clear Chat
-        </button>
-      </div>
-    </div>
-    <div id="systemMessage">
-      Hello! I'm here to help with your Scratch project. Make sure your project is shared so I can see it.
-    </div>
-    <div id="chatBody"></div>
-    <div id="inputContainer">
-      <textarea id="userInput" placeholder="Ask a question..." rows="1"></textarea>
-      <button id="sendButton">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="white"/>
-        </svg>
-      </button>
-      <button id="voiceRecordButton">
-        <svg class="microphone-icon" fill="white" width="18" height="18" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 512 512">
-          <g>
-            <g>
-              <path d="m439.5,236c0-11.3-9.1-20.4-20.4-20.4s-20.4,9.1-20.4,20.4c0,70-64,126.9-142.7,126.9-78.7,0-142.7-56.9-142.7-126.9 0-11.3-9.1-20.4-20.4-20.4s-20.4,9.1-20.4,20.4c0,86.2 71.5,157.4 163.1,166.7v57.5h-23.6c-11.3,0-20.4,9.1-20.4,20.4 0,11.3 9.1,20.4 20.4,20.4h88c11.3,0 20.4-9.1 20.4-20.4 0-11.3-9.1-20.4-20.4-20.4h-23.6v-57.5c91.6-9.3 163.1-80.5 163.1-166.7z"/>
-              <path d="m256,323.5c51,0 92.3-41.3 92.3-92.3v-127.9c0-51-41.3-92.3-92.3-92.3s-92.3,41.3-92.3,92.3v127.9c0,51 41.3,92.3 92.3,92.3zm-52.3-220.2c0-28.8 23.5-52.3 52.3-52.3s52.3,23.5 52.3,52.3v127.9c0,28.8-23.5,52.3-52.3,52.3s-52.3-23.5-52.3-52.3v-127.9z"/>
-            </g>
-          </g>
-        </svg>
-        <div class="stop-icon"></div>
-      </button>
-      <div id="recordingIndicator">Recording...</div>
-    </div>
-  `;
   shadow.appendChild(panel);
+  panel.style.position = "fixed";
+  panel.style.zIndex = "9999";
+  panel.style.top = "initial";
+  panel.style.left = "initial";
+  panel.style.bottom = "20px";
+  panel.style.right = "20px";
+  panel.style.width = "400px";
+  panel.style.height = "600px";
+  panel.style.background = "white";
+  panel.style.borderRadius = "10px";
+  panel.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+  panel.style.display = "flex";
+  panel.style.flexDirection = "column";
+  panel.style.fontFamily = "Helvetica Neue, Helvetica, Arial, sans-serif";
+  panel.style.border = "1px solid #ddd";
+  panel.style.overflow = "hidden";
+  panel.style.resize = "both";
+  
+  // Create resize handles
+  const directions = ['e', 'w', 'n', 's', 'ne', 'nw', 'se', 'sw'];
+  directions.forEach(dir => {
+    const handle = document.createElement('div');
+    handle.id = `resize-handle-${dir}`;
+    panel.appendChild(handle);
+  });
+
+  // Create header with title and close button
+  const header = document.createElement("div");
+  header.id = "panel-header";
+  panel.appendChild(header);
+
+  // Create a close button
+  const closeButton = document.createElement("button");
+  closeButton.className = "close-button";
+  closeButton.textContent = "×";
+  header.appendChild(closeButton);
+
+  // Create a clear chat button
+  const clearChatButton = document.createElement("button");
+  clearChatButton.id = "clearChatButton";
+  clearChatButton.style.background = "rgba(255, 255, 255, 0.2)";
+  clearChatButton.style.border = "none";
+  clearChatButton.style.color = "white";
+  clearChatButton.style.fontSize = "14px";
+  clearChatButton.style.cursor = "pointer";
+  clearChatButton.style.display = "flex";
+  clearChatButton.style.alignItems = "center";
+  clearChatButton.style.padding = "6px 12px";
+  clearChatButton.style.borderRadius = "16px";
+  clearChatButton.style.marginLeft = "auto";
+  clearChatButton.style.transition = "background-color 0.2s ease";
+  clearChatButton.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    </svg>
+    Clear Chat
+  `;
+  header.appendChild(clearChatButton);
+
+  // Create system message
+  const systemMessage = document.createElement("div");
+  systemMessage.id = "systemMessage";
+  systemMessage.style.padding = "10px 15px";
+  systemMessage.style.background = "#f7f7f7";
+  systemMessage.style.borderBottom = "1px solid #ddd";
+  systemMessage.style.fontSize = "14px";
+  systemMessage.style.color = "#666";
+  systemMessage.textContent = "Hello! I'm here to help with your Scratch project. Make sure your project is shared so I can see it.";
+  panel.appendChild(systemMessage);
+
+  // Create chat body
+  const chatBody = document.createElement("div");
+  chatBody.id = "chatBody";
+  chatBody.style.flex = "1";
+  chatBody.style.overflowY = "auto";
+  chatBody.style.padding = "10px 15px";
+  chatBody.style.minHeight = "400px";
+  panel.appendChild(chatBody);
+
+  // Create input container
+  const inputContainer = document.createElement("div");
+  inputContainer.id = "inputContainer";
+  inputContainer.style.display = "flex";
+  inputContainer.style.padding = "10px";
+  inputContainer.style.borderTop = "1px solid #ddd";
+  panel.appendChild(inputContainer);
+
+  // Create user input
+  const userInput = document.createElement("textarea");
+  userInput.id = "userInput";
+  userInput.style.flex = "1";
+  userInput.style.border = "1px solid #ddd";
+  userInput.style.borderRadius = "18px";
+  userInput.style.padding = "8px 15px";
+  userInput.style.fontSize = "14px";
+  userInput.style.resize = "none";
+  userInput.style.outline = "none";
+  userInput.style.maxHeight = "100px";
+  userInput.style.overflowY = "auto";
+  userInput.style.cursor = "text";
+  userInput.placeholder = "Ask a question...";
+  inputContainer.appendChild(userInput);
+
+  // Create send button
+  const sendButton = document.createElement("button");
+  sendButton.id = "sendButton";
+  sendButton.style.background = "#4c97ff";
+  sendButton.style.color = "white";
+  sendButton.style.border = "none";
+  sendButton.style.borderRadius = "50%";
+  sendButton.style.width = "36px";
+  sendButton.style.height = "36px";
+  sendButton.style.marginLeft = "10px";
+  sendButton.style.cursor = "pointer";
+  sendButton.style.display = "flex";
+  sendButton.style.alignItems = "center";
+  sendButton.style.justifyContent = "center";
+  sendButton.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="white"/>
+    </svg>
+  `;
+  inputContainer.appendChild(sendButton);
+
+  // Create voice record button
+  const voiceRecordButton = document.createElement("button");
+  voiceRecordButton.id = "voiceRecordButton";
+  voiceRecordButton.style.background = "#a83232";
+  voiceRecordButton.style.color = "white";
+  voiceRecordButton.style.border = "none";
+  voiceRecordButton.style.borderRadius = "50%";
+  voiceRecordButton.style.width = "36px";
+  voiceRecordButton.style.height = "36px";
+  voiceRecordButton.style.marginLeft = "10px";
+  voiceRecordButton.style.cursor = "pointer";
+  voiceRecordButton.style.display = "flex";
+  voiceRecordButton.style.alignItems = "center";
+  voiceRecordButton.style.justifyContent = "center";
+  voiceRecordButton.style.position = "relative";
+  voiceRecordButton.innerHTML = `
+    <svg class="microphone-icon" fill="white" width="18" height="18" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 512 512">
+      <g>
+        <g>
+          <path d="m439.5,236c0-11.3-9.1-20.4-20.4-20.4s-20.4,9.1-20.4,20.4c0,70-64,126.9-142.7,126.9-78.7,0-142.7-56.9-142.7-126.9 0-11.3-9.1-20.4-20.4-20.4s-20.4,9.1-20.4,20.4c0,86.2 71.5,157.4 163.1,166.7v57.5h-23.6c-11.3,0-20.4,9.1-20.4,20.4 0,11.3 9.1,20.4 20.4,20.4h88c11.3,0 20.4-9.1 20.4-20.4 0-11.3-9.1-20.4-20.4-20.4h-23.6v-57.5c91.6-9.3 163.1-80.5 163.1-166.7z"/>
+          <path d="m256,323.5c51,0 92.3-41.3 92.3-92.3v-127.9c0-51-41.3-92.3-92.3-92.3s-92.3,41.3-92.3,92.3v127.9c0,51 41.3,92.3 92.3,92.3zm-52.3-220.2c0-28.8 23.5-52.3 52.3-52.3s52.3,23.5 52.3,52.3v127.9c0,28.8-23.5,52.3-52.3,52.3s-52.3-23.5-52.3-52.3v-127.9z"/>
+        </g>
+      </g>
+    </svg>
+    <div class="stop-icon"></div>
+  `;
+  inputContainer.appendChild(voiceRecordButton);
+
+  // Create recording indicator
+  const recordingIndicator = document.createElement("div");
+  recordingIndicator.id = "recordingIndicator";
+  recordingIndicator.style.display = "none";
+  recordingIndicator.style.position = "absolute";
+  recordingIndicator.style.bottom = "-25px";
+  recordingIndicator.style.left = "50%";
+  recordingIndicator.style.transform = "translateX(-50%)";
+  recordingIndicator.style.background = "rgba(255, 76, 76, 0.8)";
+  recordingIndicator.style.color = "white";
+  recordingIndicator.style.padding = "3px 8px";
+  recordingIndicator.style.borderRadius = "4px";
+  recordingIndicator.style.fontSize = "12px";
+  recordingIndicator.style.whiteSpace = "nowrap";
+  recordingIndicator.textContent = "Recording...";
+  voiceRecordButton.appendChild(recordingIndicator);
 
   // Create minimized button
   const minimizedButton = document.createElement("div");
   minimizedButton.id = "minimizedButton";
+  shadow.appendChild(minimizedButton);
+  minimizedButton.style.position = "fixed";
+  minimizedButton.style.bottom = "80px";
+  minimizedButton.style.right = "20px";
+  minimizedButton.style.width = "60px";
+  minimizedButton.style.height = "60px";
+  minimizedButton.style.background = "#4c97ff";
+  minimizedButton.style.borderRadius = "12px";
+  minimizedButton.style.boxShadow = "0 5px 15px rgba(76, 151, 255, 0.4)";
+  minimizedButton.style.display = "none";
+  minimizedButton.style.flexDirection = "column";
+  minimizedButton.style.alignItems = "center";
+  minimizedButton.style.justifyContent = "center";
+  minimizedButton.style.cursor = "pointer";
+  minimizedButton.style.zIndex = "9999";
+  minimizedButton.style.transition = "all 0.3s ease";
+  minimizedButton.style.overflow = "hidden";
+  minimizedButton.style.border = "none";
   minimizedButton.innerHTML = `
-    <div class="chat-icon">
+    <div class="drag-handle" id="drag-handle" style="
+      width: 100%;
+      height: 25%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.2);
+      cursor: move;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+    ">
+      <div style="width: 30px; height: 4px; background-color: white; border-radius: 2px;"></div>
+    </div>
+    <div class="click-area" id="click-area" style="
+      width: 100%;
+      height: 75%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: transparent;
+      cursor: pointer;
+    ">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
-        <path d="M12 1c-6.628 0-12 4.573-12 10.213 0 2.39.932 4.591 2.427 6.164l-2.427 5.623 7.563-2.26c9.495 2.598 16.437-3.251 16.437-9.527 0-5.64-5.372-10.213-12-10.213z"/>
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
       </svg>
     </div>
   `;
-  shadow.appendChild(minimizedButton);
+  
+  // Add event listeners for dragging and clicking
+  const dragHandle = minimizedButton.querySelector('#drag-handle');
+  const clickArea = minimizedButton.querySelector('#click-area');
+  
+  // Make minimized button draggable
+  let isDraggingMinimized = false;
+  let minimizedOffsetX, minimizedOffsetY;
+  let wasDragging = false; // Flag to track if we just finished dragging
+  
+  dragHandle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDraggingMinimized = true;
+    wasDragging = false; // Reset the was-dragging flag
+    minimizedOffsetX = e.clientX - minimizedButton.getBoundingClientRect().left;
+    minimizedOffsetY = e.clientY - minimizedButton.getBoundingClientRect().top;
+    minimizedButton.style.transition = 'none'; // Disable transitions while dragging
+  });
+  
+  // Setup click handler for the click area only
+  clickArea.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Show the panel
+    window.ScratchAITutor.UI.showPanel(panel, minimizedButton);
+  });
+  
+  // Remove the existing click handler on the whole minimized button
+  // to prevent overlapping behavior
+  
+  // Determine which edges an element should snap to
+  const getSnapEdges = (element, elementType) => {
+    return window.ScratchAITutor.UI.getSnapEdges(element, elementType);
+  };
+  
+  // Position an element based on snap edges
+  const snapElementToEdges = (element, snapEdges, elementType) => {
+    return window.ScratchAITutor.UI.snapElementToEdges(element, snapEdges, elementType);
+  };
 
-  // Get elements from shadow DOM
-  const systemMessageEl = shadow.getElementById("systemMessage");
-  const chatBody = shadow.getElementById("chatBody");
-  const userInput = shadow.getElementById("userInput");
-  const sendButton = shadow.getElementById("sendButton");
-  const closeButton = shadow.querySelector(".close-button");
-  const clearChatButton = shadow.getElementById("clearChatButton");
-  const voiceRecordButton = shadow.getElementById("voiceRecordButton");
-  const recordingIndicator = shadow.getElementById("recordingIndicator");
+  // Get stored position and size from localStorage
+  const loadPanelPosition = () => {
+    const position = window.ScratchAITutor.Storage.getPanelPosition();
+    if (position && position.snapEdges) {
+      snapElementToEdges(panel, position.snapEdges, 'panel');
+    } else {
+      // Default to bottom right if no saved position
+      snapElementToEdges(panel, { horizontal: 'bottom', vertical: 'right' }, 'panel');
+    }
+  };
+  
+  const loadMinimizedButtonPosition = () => {
+    const position = window.ScratchAITutor.Storage.getMinimizedButtonPosition();
+    if (position && position.snapEdges) {
+      snapElementToEdges(minimizedButton, position.snapEdges, 'minimized');
+    } else {
+      // Default to bottom right if no saved position
+      snapElementToEdges(minimizedButton, { horizontal: 'bottom', vertical: 'right' }, 'minimized');
+    }
+  };
+
+  // Load positions
+  loadPanelPosition();
+  loadMinimizedButtonPosition();
+
+  // Make panel draggable by header
+  let isDraggingPanel = false;
+  let panelOffsetX, panelOffsetY;
+  
+  header.addEventListener('mousedown', (e) => {
+    isDraggingPanel = true;
+    panelOffsetX = e.clientX - panel.getBoundingClientRect().left;
+    panelOffsetY = e.clientY - panel.getBoundingClientRect().top;
+    panel.style.transition = 'none'; // Disable transitions while dragging
+  });
+  
+  // Global mouse events for drag and resize
+  document.addEventListener('mousemove', (e) => {
+    if (isDraggingPanel) {
+      e.preventDefault();
+      // Move panel with pointer during drag (temporary positioning)
+      const newLeft = e.clientX - panelOffsetX;
+      const newTop = e.clientY - panelOffsetY;
+      
+      panel.style.left = newLeft + 'px';
+      panel.style.top = newTop + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    } else if (isDraggingMinimized) {
+      e.preventDefault();
+      // Move minimized button with pointer during drag (temporary positioning)
+      const newLeft = e.clientX - minimizedOffsetX;
+      const newTop = e.clientY - minimizedOffsetY;
+      
+      minimizedButton.style.left = newLeft + 'px';
+      minimizedButton.style.top = newTop + 'px';
+      minimizedButton.style.right = 'auto';
+      minimizedButton.style.bottom = 'auto';
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (isDraggingPanel) {
+      isDraggingPanel = false;
+      panel.style.transition = '0.3s ease'; // Restore transitions
+      
+      // Determine which edges to snap to
+      const snapEdges = getSnapEdges(panel, 'panel');
+      
+      // Snap to edges
+      snapElementToEdges(panel, snapEdges, 'panel');
+      
+      // Save panel position
+      const position = {
+        snapEdges: snapEdges
+      };
+      window.ScratchAITutor.Storage.savePanelPosition(position);
+    }
+    
+    if (isDraggingMinimized) {
+      isDraggingMinimized = false;
+      wasDragging = true; // Set the flag that we just finished dragging
+      minimizedButton.style.transition = '0.3s ease'; // Restore transitions
+      
+      // Determine which edge to snap to
+      const snapEdges = getSnapEdges(minimizedButton, 'minimized');
+      
+      // Snap to edge
+      snapElementToEdges(minimizedButton, snapEdges, 'minimized');
+      
+      // Save minimized button position
+      const position = {
+        snapEdges: snapEdges
+      };
+      window.ScratchAITutor.Storage.saveMinimizedButtonPosition(position);
+      
+      // Use setTimeout to reset the wasDragging flag after a delay
+      setTimeout(() => {
+        wasDragging = false;
+      }, 300);
+    }
+  });
+
+  // Resize functionality
+  let isResizing = false;
+  let currentResizeHandle = null;
+  let originalWidth, originalHeight, originalX, originalY, startX, startY;
+  
+  directions.forEach(dir => {
+    const handle = shadow.getElementById(`resize-handle-${dir}`);
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isResizing = true;
+      currentResizeHandle = dir;
+      originalWidth = panel.offsetWidth;
+      originalHeight = panel.offsetHeight;
+      originalX = panel.getBoundingClientRect().left;
+      originalY = panel.getBoundingClientRect().top;
+      startX = e.clientX;
+      startY = e.clientY;
+      panel.style.transition = 'none'; // Disable transitions while resizing
+    });
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (isResizing) {
+      e.preventDefault();
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      
+      // Minimum dimensions
+      const minWidth = 350;
+      const minHeight = 450;
+      
+      let newWidth = originalWidth;
+      let newHeight = originalHeight;
+      let newX = originalX;
+      let newY = originalY;
+      
+      // Handle different resize directions
+      if (currentResizeHandle.includes('e')) {
+        newWidth = Math.max(minWidth, originalWidth + dx);
+      }
+      if (currentResizeHandle.includes('w')) {
+        const possibleWidth = Math.max(minWidth, originalWidth - dx);
+        if (possibleWidth !== minWidth || dx < 0) {
+          newX = originalX + originalWidth - possibleWidth;
+          newWidth = possibleWidth;
+        }
+      }
+      if (currentResizeHandle.includes('s')) {
+        newHeight = Math.max(minHeight, originalHeight + dy);
+      }
+      if (currentResizeHandle.includes('n')) {
+        const possibleHeight = Math.max(minHeight, originalHeight - dy);
+        if (possibleHeight !== minHeight || dy < 0) {
+          newY = originalY + originalHeight - possibleHeight;
+          newHeight = possibleHeight;
+        }
+      }
+      
+      // Apply new dimensions and position
+      panel.style.width = newWidth + 'px';
+      panel.style.height = newHeight + 'px';
+      panel.style.left = newX + 'px';
+      panel.style.top = newY + 'px';
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      currentResizeHandle = null;
+      panel.style.transition = ''; // Restore transitions
+      
+      // After resizing, snap to appropriate edges
+      const snapEdges = getSnapEdges(panel, 'panel');
+      snapElementToEdges(panel, snapEdges, 'panel');
+      
+      // Save panel position
+      const position = {
+        snapEdges: snapEdges
+      };
+      window.ScratchAITutor.Storage.savePanelPosition(position);
+    }
+  });
+
+  // Add event listeners for close and clear chat buttons
+  closeButton.addEventListener('click', () => {
+    // Hide panel and show minimized button
+    window.ScratchAITutor.UI.hidePanel(panel, minimizedButton);
+  });
 
   // Return the created UI elements
   return {
@@ -646,14 +1317,14 @@ window.ScratchAITutor.UI.createUI = function() {
     shadow,
     panel,
     minimizedButton,
-    systemMessageEl,
-    chatBody,
-    userInput,
-    sendButton,
-    closeButton,
-    clearChatButton,
-    voiceRecordButton,
-    recordingIndicator
+    systemMessageEl: shadow.getElementById("systemMessage"),
+    chatBodyEl: shadow.getElementById("chatBody"),
+    userInputEl: shadow.getElementById("userInput"),
+    sendButtonEl: shadow.getElementById("sendButton"),
+    closeButtonEl: shadow.querySelector(".close-button"),
+    clearChatButtonEl: shadow.getElementById("clearChatButton"),
+    voiceRecordButtonEl: shadow.getElementById("voiceRecordButton"),
+    recordingIndicatorEl: shadow.getElementById("recordingIndicator")
   };
 };
 
@@ -1039,30 +1710,42 @@ window.ScratchAITutor.UI.showThinkingIndicator = function(chatBody) {
 };
 
 /**
- * Hide the panel
- * @param {HTMLElement} panel - The panel element
- * @param {HTMLElement} minimizedButton - The minimized button element
+ * Add storage functions for autoplay preference
  */
-window.ScratchAITutor.UI.hidePanel = function(panel, minimizedButton) {
-  panel.style.display = "none";
-  minimizedButton.style.display = "block";
-};
-
-/**
- * Show the panel
- * @param {HTMLElement} panel - The panel element
- * @param {HTMLElement} minimizedButton - The minimized button element
- */
-window.ScratchAITutor.UI.showPanel = function(panel, minimizedButton) {
-  panel.style.display = "flex";
-  minimizedButton.style.display = "none";
-};
-
-// Add storage functions for autoplay preference
 window.ScratchAITutor.Storage = window.ScratchAITutor.Storage || {};
 window.ScratchAITutor.Storage.getAutoplayPreference = function() {
   return JSON.parse(localStorage.getItem('scratchAITutor_autoplay') || 'false');
 };
 window.ScratchAITutor.Storage.setAutoplayPreference = function(value) {
   localStorage.setItem('scratchAITutor_autoplay', JSON.stringify(value));
+};
+
+/**
+ * Add storage functions for panel position
+ */
+window.ScratchAITutor.Storage.getPanelPosition = function() {
+  return JSON.parse(localStorage.getItem('scratchAITutor_panelPosition'));
+};
+window.ScratchAITutor.Storage.savePanelPosition = function(position) {
+  localStorage.setItem('scratchAITutor_panelPosition', JSON.stringify(position));
+};
+
+/**
+ * Add storage functions for minimized button position
+ */
+window.ScratchAITutor.Storage.getMinimizedButtonPosition = function() {
+  return JSON.parse(localStorage.getItem('scratchAITutor_minimizedButtonPosition'));
+};
+window.ScratchAITutor.Storage.saveMinimizedButtonPosition = function(position) {
+  localStorage.setItem('scratchAITutor_minimizedButtonPosition', JSON.stringify(position));
+};
+
+/**
+ * Add storage functions for UI state (minimized/maximized)
+ */
+window.ScratchAITutor.Storage.getUIState = function() {
+  return JSON.parse(localStorage.getItem('scratchAITutor_uiState') || '{"minimized": true}');
+};
+window.ScratchAITutor.Storage.saveUIState = function(state) {
+  localStorage.setItem('scratchAITutor_uiState', JSON.stringify(state));
 };

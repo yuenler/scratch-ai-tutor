@@ -8,16 +8,60 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     shadow, 
     panel, 
     minimizedButton, 
-    chatBody, 
-    userInput, 
-    sendButton, 
-    closeButton,
-    clearChatButton,
-    voiceRecordButton
+    systemMessageEl,
+    chatBodyEl,
+    userInputEl,
+    sendButtonEl,
+    closeButtonEl,
+    clearChatButtonEl,
+    voiceRecordButtonEl
   } = window.ScratchAITutor.UI.createUI();
 
   // Add the container to the document
   document.body.appendChild(container);
+
+  // Check saved UI state or default to minimized
+  const uiState = window.ScratchAITutor.Storage.getUIState();
+  
+  if (uiState.minimized) {
+    // If state is minimized or this is first run (defaults to minimized)
+    panel.style.display = "none";
+    minimizedButton.style.display = "flex";
+    
+    // Load or set default position for minimized button
+    const position = window.ScratchAITutor.Storage.getMinimizedButtonPosition();
+    const snapEdges = position && position.snapEdges ? 
+      position.snapEdges : 
+      { horizontal: 'bottom', vertical: 'right' };
+    
+    window.ScratchAITutor.UI.snapElementToEdges(minimizedButton, snapEdges, 'minimized');
+    
+    // Save position if it was default
+    if (!position || !position.snapEdges) {
+      window.ScratchAITutor.Storage.saveMinimizedButtonPosition({
+        snapEdges: snapEdges
+      });
+    }
+  } else {
+    // If state is maximized
+    minimizedButton.style.display = "none";
+    panel.style.display = "flex";
+    
+    // Load or set default position for panel
+    const position = window.ScratchAITutor.Storage.getPanelPosition();
+    const snapEdges = position && position.snapEdges ? 
+      position.snapEdges : 
+      { horizontal: 'bottom', vertical: 'right' };
+    
+    window.ScratchAITutor.UI.snapElementToEdges(panel, snapEdges, 'panel');
+    
+    // Save position if it was default
+    if (!position || !position.snapEdges) {
+      window.ScratchAITutor.Storage.savePanelPosition({
+        snapEdges: snapEdges
+      });
+    }
+  }
 
   // Variable to store the recorder object
   let recorderObj = null;
@@ -25,7 +69,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
 
   // Function to send a question
   function sendQuestion() {
-    const question = userInput.value.trim();
+    const question = userInputEl.value.trim();
     if (!question) return;
     
     // Try to autosave the project first
@@ -48,21 +92,21 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     // Get project ID
     const projectId = window.ScratchAITutor.Utils.getProjectId(window.location.href);
     if (!projectId) {
-      window.ScratchAITutor.UI.addMessage(chatBody, shadow, "Sorry, I couldn't identify the project ID.", "assistant");
+      window.ScratchAITutor.UI.addMessage(chatBodyEl, shadow, "Sorry, I couldn't identify the project ID.", "assistant");
       return;
     }
     
     // Add user message to chat
-    window.ScratchAITutor.UI.addMessage(chatBody, shadow, question, "user");
+    window.ScratchAITutor.UI.addMessage(chatBodyEl, shadow, question, "user");
     
     // Add user message to chat history
     window.ScratchAITutor.Storage.addMessageToHistory(projectId, question, "user");
     
     // Clear input
-    userInput.value = "";
+    userInputEl.value = "";
     
     // Show thinking indicator
-    const thinkingIndicator = window.ScratchAITutor.UI.showThinkingIndicator(chatBody);
+    const thinkingIndicator = window.ScratchAITutor.UI.showThinkingIndicator(chatBodyEl);
     
     // Send question to API
     window.ScratchAITutor.API.sendQuestionToAPI(
@@ -75,7 +119,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         
         // Add assistant message with audio if available
         window.ScratchAITutor.UI.addMessage(
-          chatBody, 
+          chatBodyEl, 
           shadow, 
           answer, 
           "assistant", 
@@ -93,33 +137,33 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         // Add error message
         console.error("Error sending question to API:", error);
         if (error.includes("Failed to get token")) {
-          window.ScratchAITutor.UI.addMessage(chatBody, shadow, `I can't access your project. Please check if your project is set to "Share" so it's publicly viewable.`, "assistant");
+          window.ScratchAITutor.UI.addMessage(chatBodyEl, shadow, `I can't access your project. Please check if your project is set to "Share" so it's publicly viewable.`, "assistant");
         } else {
-          window.ScratchAITutor.UI.addMessage(chatBody, shadow, `Oops! Something didn't work right. Maybe try asking me again?`, "assistant");
+          window.ScratchAITutor.UI.addMessage(chatBodyEl, shadow, `Oops! Something didn't work right. Maybe try asking me again?`, "assistant");
         }
       }
     );
   }
 
   // Voice recording button click - Toggle recording
-  voiceRecordButton.addEventListener("click", async () => {
+  voiceRecordButtonEl.addEventListener("click", async () => {
     if (!isRecording) {
       // Start recording
       try {
         console.log("Starting voice recording...");
         isRecording = true;
-        voiceRecordButton.classList.add("recording");
+        voiceRecordButtonEl.classList.add("recording");
         
         // Start recording and get the recorder object
         recorderObj = await window.ScratchAITutor.VoiceRecording.startRecording();
       } catch (error) {
         console.error("Error starting voice recording:", error);
-        voiceRecordButton.classList.remove("recording");
+        voiceRecordButtonEl.classList.remove("recording");
         isRecording = false;
         
         // Show error message
         window.ScratchAITutor.UI.addMessage(
-          chatBody, 
+          chatBodyEl, 
           shadow, 
           "Sorry, I couldn't access your microphone. Please check your microphone permissions and try again.", 
           "assistant"
@@ -129,14 +173,14 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       // Stop recording
       try {
         console.log("Stopping voice recording...");
-        voiceRecordButton.classList.remove("recording");
+        voiceRecordButtonEl.classList.remove("recording");
         isRecording = false;
         
         // First get the audio data before showing any UI indicators
         const audioBase64 = await window.ScratchAITutor.VoiceRecording.stopRecording(recorderObj);
         
         // Only show thinking indicator if we successfully got audio data
-        const thinkingIndicator = window.ScratchAITutor.UI.showThinkingIndicator(chatBody);
+        const thinkingIndicator = window.ScratchAITutor.UI.showThinkingIndicator(chatBodyEl);
         thinkingIndicator.textContent = "Transcribing audio...";
         
         try {
@@ -148,18 +192,18 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
           
           if (transcribedText) {
             // Set the transcribed text to the input field
-            userInput.value = transcribedText;
+            userInputEl.value = transcribedText;
             
             // Auto-resize the input field
-            userInput.style.height = "auto";
-            userInput.style.height = Math.min(userInput.scrollHeight, 100) + "px";
+            userInputEl.style.height = "auto";
+            userInputEl.style.height = Math.min(userInputEl.scrollHeight, 100) + "px";
             
             // Focus the input field
-            userInput.focus();
+            userInputEl.focus();
           } else {
             // Show error message if transcription failed
             window.ScratchAITutor.UI.addMessage(
-              chatBody, 
+              chatBodyEl, 
               shadow, 
               "Sorry, I couldn't transcribe your voice. Please try again or type your question.", 
               "assistant"
@@ -171,7 +215,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
           thinkingIndicator.remove();
           
           window.ScratchAITutor.UI.addMessage(
-            chatBody, 
+            chatBodyEl, 
             shadow, 
             "Sorry, there was an error transcribing your voice. Please try again or type your question.", 
             "assistant"
@@ -180,12 +224,12 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       } catch (recordingError) {
         // Handle recording errors - no thinking indicator needed here
         console.error("Error stopping voice recording:", recordingError);
-        voiceRecordButton.classList.remove("recording");
+        voiceRecordButtonEl.classList.remove("recording");
         isRecording = false;
         
         // Show error message
         window.ScratchAITutor.UI.addMessage(
-          chatBody, 
+          chatBodyEl, 
           shadow, 
           "Sorry, there was an error processing your voice recording. Please try again or type your question.", 
           "assistant"
@@ -195,10 +239,10 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   });
 
   // Send button click
-  sendButton.addEventListener("click", sendQuestion);
+  sendButtonEl.addEventListener("click", sendQuestion);
 
   // Allow sending via Enter while permitting Shift+Enter for new lines
-  userInput.addEventListener("keydown", (e) => {
+  userInputEl.addEventListener("keydown", (e) => {
     // Always stop propagation of keyboard events to prevent Scratch IDE from capturing them
     e.stopPropagation();
     
@@ -209,19 +253,19 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   });
 
   // Auto-resize textarea as user types
-  userInput.addEventListener("input", () => {
-    userInput.style.height = "auto";
-    userInput.style.height = Math.min(userInput.scrollHeight, 100) + "px";
+  userInputEl.addEventListener("input", () => {
+    userInputEl.style.height = "auto";
+    userInputEl.style.height = Math.min(userInputEl.scrollHeight, 100) + "px";
   });
 
   // Close button click
-  closeButton.addEventListener("click", () => window.ScratchAITutor.UI.hidePanel(panel, minimizedButton));
+  closeButtonEl.addEventListener("click", () => window.ScratchAITutor.UI.hidePanel(panel, minimizedButton));
 
-  // Clicking the minimized button reopens the panel
-  minimizedButton.addEventListener("click", () => window.ScratchAITutor.UI.showPanel(panel, minimizedButton));
-
+  // The minimizedButton click functionality is now handled in ui.js with separate areas for
+  // dragging and clicking to ensure proper separation of concerns
+  
   // Clear chat button click
-  clearChatButton.addEventListener("click", () => {
+  clearChatButtonEl.addEventListener("click", () => {
     // Get the current project ID
     const currentProjectId = window.ScratchAITutor.Utils.getProjectId(window.location.href);
     
@@ -230,7 +274,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       window.ScratchAITutor.Storage.clearChatHistory(currentProjectId);
       
       // Clear the chat UI
-      chatBody.innerHTML = '';
+      chatBodyEl.innerHTML = '';
       
       console.log("Chat history cleared for project ID:", currentProjectId);
     }
@@ -260,7 +304,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         previousChat.forEach(msg => {
           // Create the message in the UI but don't render scratchblocks yet
           const messageContent = window.ScratchAITutor.UI.addMessage(
-            chatBody, 
+            chatBodyEl, 
             shadow, 
             msg.content, 
             msg.role,
@@ -289,7 +333,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         }
         
         // Scroll to the bottom of the chat
-        chatBody.scrollTop = chatBody.scrollHeight;
+        chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
       }
     }
     
