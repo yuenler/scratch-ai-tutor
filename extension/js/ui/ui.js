@@ -225,7 +225,7 @@ window.BlockBuddy.UI.createUI = function() {
   if (typeof window.scratchblocks === 'undefined') {
     console.log("Loading scratchblocks library...");
     const script = document.createElement('script');
-    script.src = 'https://scratchblocks.github.io/js/scratchblocks-v3.6-min.js';
+    script.src = chrome.runtime.getURL('js/libs/scratchblocks-v3.6-min.js');
     document.head.appendChild(script);
     
     script.onload = function() {

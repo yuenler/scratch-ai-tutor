@@ -224,7 +224,7 @@ window.BlockBuddy.ScratchBlocks.renderScratchblocks = function(shadow, targetCon
     
     // Try to load the scratchblocks library
     const script = document.createElement('script');
-    script.src = 'https://scratchblocks.github.io/js/scratchblocks-v3.6-min.js';
+    script.src = chrome.runtime.getURL('js/libs/scratchblocks-v3.6-min.js');
     document.head.appendChild(script);
     
     script.onload = function() {
