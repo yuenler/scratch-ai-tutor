@@ -11,13 +11,22 @@ window.BlockBuddy.Markdown = window.BlockBuddy.Markdown || {};
  */
 window.BlockBuddy.Markdown.parseMarkdown = function(text) {
   if (!text) return '';
+
+  // find every instance of ```scratchblocks and add a \n after if there isn't one
+  text = text.replace(/```scratchblocks([^\n])/g, '```scratchblocks\n$1');
+  
+  // Add a newline before closing triple backt`icks if there isn't one
+  // Look for blocks that start with ```scratchblocks and end with ``` without a newline
+  text = text.replace(/(```scratchblocks\n[\s\S]*?)([^\n])```/g, '$1$2\n```');
   
   // Process scratchblocks code blocks first (special handling)
   text = text.replace(/```scratchblocks\n([\s\S]*?)\n```/g, function(match, code) {
     console.log("Found scratchblocks code block:", code);
     return `<div class="scratchblocks-container" style="padding: 10px; margin: 10px 0;"><pre class="blocks">${window.BlockBuddy.Utils.escapeHtml(code)}</pre></div>`;
   });
-  
+
+  console.log("After scratchblocks processing:", text);
+
   // Process other code blocks with syntax highlighting
   text = text.replace(/```(\w*)\n([\s\S]*?)\n```/g, function(match, language, code) {
     if (language === 'scratch') {
