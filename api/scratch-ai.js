@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     console.log("Messages array:", JSON.stringify(messages, null, 2));
 
     // Determine which model to use based on useThinkingModel parameter
-    const modelName = useThinkingModel ? "o3-mini" : "4o-mini";
+    const modelName = useThinkingModel ? "o3-mini" : "gpt-4o-mini";
     console.log(`Using model: ${modelName} (Thinking mode: ${useThinkingModel})`);
 
     const openai = new OpenAI(process.env.OPENAI_API_KEY);
