@@ -267,7 +267,15 @@ async function getProjectFromUrl(url, providedToken = null) {
     console.log(`No token provided for project ${projectId}, fetching...`);
     // First, get project details to obtain the token.
     try {
-      const res1 = await fetch(`https://api.scratch.mit.edu/projects/${projectId}`);
+      // Add browser-like headers to avoid rate limiting
+      const headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://scratch.mit.edu/'
+      };
+      
+      const res1 = await fetch(`https://api.scratch.mit.edu/projects/${projectId}`, { headers });
       const details = await res1.json();
 
       token = details.project_token;
