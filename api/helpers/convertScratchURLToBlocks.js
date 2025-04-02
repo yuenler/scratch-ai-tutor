@@ -267,15 +267,25 @@ async function getProjectFromUrl(url, providedToken = null) {
     console.log(`No token provided for project ${projectId}, fetching...`);
     // First, get project details to obtain the token.
     try {
-      // Add browser-like headers to avoid rate limiting
+      // Add browser-like headers to avoid rate limiting - matching actual browser headers
       const headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://scratch.mit.edu/'
+        'sec-ch-ua': '"Not:A-Brand";v="24", "Chromium";v="134"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"macOS"',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'none',
+        'dnt': '1',
+        'upgrade-insecure-requests': '1'
       };
       
-      const res1 = await fetch(`https://api.scratch.mit.edu/projects/${projectId}`, { headers });
+      const res1 = await fetch(`https://api.scratch.mit.edu/projects/${projectId}`, { 
+        headers,
+        credentials: 'omit' // Don't send cookies - we don't have them in the server environment
+      });
       const details = await res1.json();
 
       token = details.project_token;
