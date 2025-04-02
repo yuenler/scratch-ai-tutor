@@ -952,6 +952,81 @@ window.BlockBuddy.UI.createUI = function() {
   systemMessage.textContent = "Hello! I'm here to help with your Scratch project. Make sure your project is shared so I can see it.";
   panel.appendChild(systemMessage);
 
+  // Create model selection toggle container
+  const modelToggleContainer = document.createElement('div');
+  modelToggleContainer.className = 'toggle-switch-container';
+  modelToggleContainer.style.display = 'flex';
+  modelToggleContainer.style.alignItems = 'center';
+  modelToggleContainer.style.gap = '8px';
+  modelToggleContainer.style.margin = '4px 0';
+  
+  // Create the model toggle switch
+  const modelToggleSwitch = document.createElement('label');
+  modelToggleSwitch.className = 'toggle-switch';
+  modelToggleSwitch.style.position = 'relative';
+  modelToggleSwitch.style.display = 'inline-block';
+  modelToggleSwitch.style.width = '36px';
+  modelToggleSwitch.style.height = '20px';
+  
+  const modelToggleInput = document.createElement('input');
+  modelToggleInput.type = 'checkbox';
+  modelToggleInput.checked = window.BlockBuddy.Storage.getModelPreference() || false;
+  modelToggleInput.style.opacity = '0';
+  modelToggleInput.style.width = '0';
+  modelToggleInput.style.height = '0';
+  
+  const modelToggleSlider = document.createElement('span');
+  modelToggleSlider.className = 'toggle-slider';
+  modelToggleSlider.style.position = 'absolute';
+  modelToggleSlider.style.cursor = 'pointer';
+  modelToggleSlider.style.top = '0';
+  modelToggleSlider.style.left = '0';
+  modelToggleSlider.style.right = '0';
+  modelToggleSlider.style.bottom = '0';
+  modelToggleSlider.style.backgroundColor = modelToggleInput.checked ? '#4c97ff' : '#ccc';
+  modelToggleSlider.style.transition = '.4s';
+  modelToggleSlider.style.borderRadius = '20px';
+  
+  // Create the slider circle
+  const modelToggleCircle = document.createElement('span');
+  modelToggleCircle.style.position = 'absolute';
+  modelToggleCircle.style.content = '""';
+  modelToggleCircle.style.height = '16px';
+  modelToggleCircle.style.width = '16px';
+  modelToggleCircle.style.left = '2px';
+  modelToggleCircle.style.bottom = '2px';
+  modelToggleCircle.style.backgroundColor = 'white';
+  modelToggleCircle.style.transition = '.4s';
+  modelToggleCircle.style.borderRadius = '50%';
+  modelToggleCircle.style.transform = modelToggleInput.checked ? 'translateX(16px)' : 'none';
+  
+  modelToggleSlider.appendChild(modelToggleCircle);
+  modelToggleSwitch.appendChild(modelToggleInput);
+  modelToggleSwitch.appendChild(modelToggleSlider);
+  
+  // Create the label for the model toggle
+  const modelToggleLabel = document.createElement('span');
+  modelToggleLabel.textContent = 'Thinking Mode (better, but slower responses)';
+  modelToggleLabel.style.fontSize = '12px';
+  modelToggleLabel.style.color = '#575e75';
+  modelToggleLabel.style.userSelect = 'none';
+  
+  modelToggleContainer.appendChild(modelToggleSwitch);
+  modelToggleContainer.appendChild(modelToggleLabel);
+  
+  // Add event listener to save preference
+  modelToggleInput.addEventListener('change', function() {
+    const isChecked = this.checked;
+    
+    // Update the toggle appearance
+    modelToggleSlider.style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
+    modelToggleCircle.style.transform = isChecked ? 'translateX(16px)' : 'none';
+    
+    // Save the preference
+    window.BlockBuddy.Storage.setModelPreference(isChecked);
+    console.log(`Model preference changed to: ${isChecked ? 'thinking (o3-mini)' : 'non-thinking (4o-mini)'}`);
+  });
+  
   // Create chat body
   const chatBody = document.createElement("div");
   chatBody.id = "chatBody";
@@ -1050,6 +1125,19 @@ window.BlockBuddy.UI.createUI = function() {
   recordingIndicator.style.whiteSpace = "nowrap";
   recordingIndicator.textContent = "Recording...";
   voiceRecordButton.appendChild(recordingIndicator);
+
+  // Create model toggle container below the input area
+  const modelToggleOuterContainer = document.createElement('div');
+  modelToggleOuterContainer.id = "modelToggleOuterContainer";
+  modelToggleOuterContainer.style.display = "flex";
+  modelToggleOuterContainer.style.justifyContent = "center";
+  modelToggleOuterContainer.style.alignItems = "center";
+  modelToggleOuterContainer.style.padding = "8px 10px";
+  modelToggleOuterContainer.style.borderTop = "1px solid #eee";
+  panel.appendChild(modelToggleOuterContainer);
+  
+  // Add the model toggle to the container below the input area
+  modelToggleOuterContainer.appendChild(modelToggleContainer);
 
   // Create minimized button
   const minimizedButton = document.createElement("div");

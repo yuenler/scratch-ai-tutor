@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         console.error('Failed to parse JSON body:', error);
       }
     }
-    const { projectId, question, projectToken, chatHistory } = body;
+    const { projectId, question, projectToken, chatHistory, useThinkingModel = true } = body;
     if (!projectId || !question) {
       return res.status(400).json({ error: "Missing 'projectId' or 'question' in request body." });
     }
@@ -29,10 +29,14 @@ export default async function handler(req, res) {
     const url = `https://scratch.mit.edu/projects/${projectId}/`;
 
     console.log("Converting URL to blocks...");
-    const result = await convertScratchURLToBlocks(url, projectToken);
-
-    if (!result.blocksText) {
-      return res.status(500).json({ error: result.error });
+    let result;
+    try {
+      result = await convertScratchURLToBlocks(url, projectToken);
+      if (!result.blocksText) {
+        console.error("Failed to convert project to blocks");
+      }
+    } catch (error) {
+      console.error("Error converting Scratch URL to blocks:", error);
     }
 
     console.log("Generating prompt...");
@@ -68,9 +72,13 @@ export default async function handler(req, res) {
 
     console.log("Messages array:", JSON.stringify(messages, null, 2));
 
+    // Determine which model to use based on useThinkingModel parameter
+    const modelName = useThinkingModel ? "o3-mini" : "4o-mini";
+    console.log(`Using model: ${modelName} (Thinking mode: ${useThinkingModel})`);
+
     const openai = new OpenAI(process.env.OPENAI_API_KEY);
     const completion = await openai.chat.completions.create({
-      model: "o3-mini",
+      model: modelName,
       messages: messages,
     });
 

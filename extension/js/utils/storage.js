@@ -9,10 +9,10 @@ const STORAGE_PREFIX = 'blockBuddy_';
 const PROJECT_TOKENS_KEY = STORAGE_PREFIX + 'projectTokens';
 const CHAT_HISTORY_KEY = STORAGE_PREFIX + 'chatHistory';
 const AUTOPLAY_KEY = STORAGE_PREFIX + 'autoplay';
+const MODEL_PREFERENCE_KEY = STORAGE_PREFIX + 'modelPreference';
 const PANEL_POSITION_KEY = STORAGE_PREFIX + 'panelPosition';
 const MINIMIZED_BUTTON_POSITION_KEY = STORAGE_PREFIX + 'minimizedButtonPosition';
 const UI_STATE_KEY = STORAGE_PREFIX + 'uiState';
-
 
 // Store project tokens for reuse
 let projectTokens = {};
@@ -168,6 +168,18 @@ window.BlockBuddy.Storage.getAutoplayPreference = function() {
 
 window.BlockBuddy.Storage.setAutoplayPreference = function(value) {
   localStorage.setItem(AUTOPLAY_KEY, JSON.stringify(value));
+};
+
+/**
+ * Add storage functions for model preference (thinking vs non-thinking)
+ * Returns true for thinking model (o3-mini), false for non-thinking model (4o-mini)
+ */
+window.BlockBuddy.Storage.getModelPreference = function() {
+  return JSON.parse(localStorage.getItem(MODEL_PREFERENCE_KEY) || 'true');
+};
+
+window.BlockBuddy.Storage.setModelPreference = function(value) {
+  localStorage.setItem(MODEL_PREFERENCE_KEY, JSON.stringify(value));
 };
 
 /**

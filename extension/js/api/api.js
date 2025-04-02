@@ -19,10 +19,15 @@ window.BlockBuddy.API.sendQuestionToAPI = function(question, projectId, onThinki
   // Get the project token if it exists
   const token = window.BlockBuddy.Storage.getProjectToken(projectId);
   
+  // Get model preference (true = thinking model, false = non-thinking model)
+  const useThinkingModel = window.BlockBuddy.Storage.getModelPreference();
+  console.log(`Using model: ${useThinkingModel ? 'thinking (o3-mini)' : 'non-thinking (4o-mini)'}`);
+  
   // Prepare the request data
   const requestData = {
     question: question,
-    projectId: projectId
+    projectId: projectId,
+    useThinkingModel: useThinkingModel
   };
   
   // Add token if available
