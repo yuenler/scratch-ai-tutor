@@ -47,6 +47,7 @@ export default async function handler(req, res) {
 2. Guide with hints and socratic questioning, don't give direct answers. Encourage them to experiment.
 3. Always use \`\`\`scratchblocks syntax for ALL code examples. NEVER make a reference to a scratch block without using the syntax, even if it's just a single block that you are suggesting they use.
 4. Keep answers concise.
+5. Never use scratchblocks syntax without \`\`\`scratchblocks\`\`\` delimiters. I want your responses to very generously show scratch block examples in scratchblocks syntax. If you don't, I will be VERY MAD.
 
 When showing code or making a reference to a block, use the \`\`\`scratchblocks syntax:
 \`\`\`scratchblocks
