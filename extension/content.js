@@ -19,12 +19,12 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   // Add the container to the document
   document.body.appendChild(container);
 
-  // Check saved UI state or default to minimized
+  // Check saved UI state or default to maximized
   const uiState = window.BlockBuddy.Storage.getUIState();
   
   // Ensure UI state is properly initialized
   if (uiState.minimized === undefined) {
-    uiState.minimized = true;
+    uiState.minimized = false; // Default to maximized
     window.BlockBuddy.Storage.saveUIState(uiState);
   }
   

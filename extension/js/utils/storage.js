@@ -199,8 +199,8 @@ window.BlockBuddy.Storage.getMinimizedButtonPosition = function() {
     return JSON.parse(storedPosition);
   } else {
     return {
-      snapEdges: { horizontal: 'bottom', vertical: 'right' },
-      position: null
+      snapEdges: { horizontal: null, vertical: 'right' },
+      position: 100,
     };
   }
 };
@@ -220,7 +220,7 @@ window.BlockBuddy.Storage.getUIState = function() {
   if (state) {
     return JSON.parse(state);
   }
-  return { minimized: true }; // Default to minimized
+  return { minimized: false }; // Default to maximized
 };
 
 window.BlockBuddy.Storage.saveUIState = function(state) {

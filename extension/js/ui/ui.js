@@ -132,10 +132,7 @@ window.BlockBuddy.UI.hidePanel = function(panel, minimizedButton) {
   if (minimizedPosition && minimizedPosition.snapEdges) {
     // Use the saved position of the minimized button
     snapEdges = minimizedPosition.snapEdges;
-  } else {
-    // Default to bottom right if no saved position
-    snapEdges = { horizontal: 'bottom', vertical: 'right' };
-  }
+  } 
   
   // First, hide the panel
   panel.style.display = "none";
@@ -1166,9 +1163,6 @@ window.BlockBuddy.UI.createUI = function() {
           minimizedButton.style.top = position.position + 'px';
         }
       }
-    } else {
-      // Default to bottom right if no saved position
-      snapElementToEdges(minimizedButton, { horizontal: 'bottom', vertical: 'right' }, 'minimized');
     }
   };
 
