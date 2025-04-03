@@ -106,6 +106,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   // Variable to store the recorder object
   let recorderObj = null;
   let isRecording = false;
+  let recordingTimeout = null;
 
   // Function to send a question
   function sendQuestion() {
@@ -196,6 +197,45 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         
         // Start recording and get the recorder object
         recorderObj = await window.BlockBuddy.VoiceRecording.startRecording();
+        
+        // Set a timeout to automatically stop recording after 20 seconds
+        const MAX_RECORDING_TIME = 20000; // 20 seconds in milliseconds
+        recordingTimeout = setTimeout(async () => {
+          if (isRecording) {
+            console.log("Recording reached maximum time limit of 20 seconds, stopping automatically.");
+            voiceRecordButtonEl.classList.remove("recording");
+            isRecording = false;
+            
+            try {
+              // Get the audio data
+              const audioBase64 = await window.BlockBuddy.VoiceRecording.stopRecording(recorderObj);
+              
+              // Show thinking indicator
+              const thinkingIndicator = window.BlockBuddy.UI.showThinkingIndicator(chatBodyEl);
+              thinkingIndicator.textContent = "Transcribing audio...";
+              
+              // Transcribe the audio
+              const transcribedText = await window.BlockBuddy.VoiceRecording.transcribeAudio(audioBase64);
+              
+              // Remove thinking indicator
+              thinkingIndicator.remove();
+              
+              if (transcribedText) {
+                // Set the transcribed text to the input field
+                userInputEl.value = transcribedText;
+                
+                // Auto-resize the input field
+                userInputEl.style.height = "auto";
+                userInputEl.style.height = Math.min(userInputEl.scrollHeight, 100) + "px";
+                
+                // Focus the input field
+                userInputEl.focus();
+              }
+            } catch (error) {
+              console.error("Error processing auto-stopped recording:", error);
+            }
+          }
+        }, MAX_RECORDING_TIME);
       } catch (error) {
         console.error("Error starting voice recording:", error);
         voiceRecordButtonEl.classList.remove("recording");
@@ -215,6 +255,12 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         console.log("Stopping voice recording...");
         voiceRecordButtonEl.classList.remove("recording");
         isRecording = false;
+        
+        // Clear the timeout if manual stop
+        if (recordingTimeout) {
+          clearTimeout(recordingTimeout);
+          recordingTimeout = null;
+        }
         
         // First get the audio data before showing any UI indicators
         const audioBase64 = await window.BlockBuddy.VoiceRecording.stopRecording(recorderObj);
