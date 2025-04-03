@@ -1248,7 +1248,12 @@ window.BlockBuddy.UI.createUI = function() {
         if (position.snapEdges.horizontal === 'top' || position.snapEdges.horizontal === 'bottom') {
           minimizedButton.style.left = position.position + 'px';
         } else if (position.snapEdges.vertical === 'left' || position.snapEdges.vertical === 'right') {
-          minimizedButton.style.top = position.position + 'px';
+          if (position.position < 0) {
+            // If position is negative, snap to bottom (default)
+            minimizedButton.style.top = '80%';
+          } else {
+            minimizedButton.style.top = position.position + 'px';
+          }
         }
       }
     }

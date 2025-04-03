@@ -212,7 +212,7 @@ window.BlockBuddy.Storage.getMinimizedButtonPosition = function() {
   } else {
     return {
       snapEdges: { horizontal: null, vertical: 'right' },
-      position: 100,
+      position: -1,
     };
   }
 };

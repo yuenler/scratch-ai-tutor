@@ -47,7 +47,12 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       if (snapEdges.horizontal === 'top' || snapEdges.horizontal === 'bottom') {
         minimizedButton.style.left = position.position + 'px';
       } else if (snapEdges.vertical === 'left' || snapEdges.vertical === 'right') {
-        minimizedButton.style.top = position.position + 'px';
+        if (position.position < 0) {
+          // If position is negative, snap to bottom (default)
+          minimizedButton.style.top = '80%';
+        } else {
+          minimizedButton.style.top = position.position + 'px';
+        }
       }
     } else {
       // Default vertical position when not provided
