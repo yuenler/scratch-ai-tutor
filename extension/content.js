@@ -149,6 +149,36 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     // Show thinking indicator
     const thinkingIndicator = window.BlockBuddy.UI.showThinkingIndicator(chatBodyEl);
     
+    // Check if screenshot is enabled
+    const screenshotEnabled = window.BlockBuddy.Storage.getScreenshotPreference();
+    
+    if (screenshotEnabled) {
+      // Try to capture screenshot
+      window.BlockBuddy.Screenshot.captureProjectScreen().then(screenshotData => {
+        // Process the screenshot if available
+        if (screenshotData) {
+          // Extract base64 data from data URL if needed
+          const processedScreenshot = window.BlockBuddy.Screenshot.processBase64Image(screenshotData);
+          console.log("Screenshot captured successfully, sending with question");
+          
+          // Send the question with the screenshot
+          sendQuestionWithData(question, projectId, thinkingIndicator, processedScreenshot);
+        } else {
+          console.log("Screenshot capture failed, sending question without screenshot");
+          sendQuestionWithData(question, projectId, thinkingIndicator, null);
+        }
+      }).catch(error => {
+        console.error("Error capturing screenshot:", error);
+        sendQuestionWithData(question, projectId, thinkingIndicator, null);
+      });
+    } else {
+      // Send without screenshot
+      sendQuestionWithData(question, projectId, thinkingIndicator, null);
+    }
+  }
+  
+  // Helper function to send the question with or without screenshot data
+  function sendQuestionWithData(question, projectId, thinkingIndicator, screenshotData) {
     // Send question to API
     window.BlockBuddy.API.sendQuestionToAPI(
       question,
@@ -182,7 +212,8 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         } else {
           window.BlockBuddy.UI.addMessage(chatBodyEl, shadow, `Oops! Something didn't work right. Maybe try asking me again?`, "assistant");
         }
-      }
+      },
+      screenshotData // Pass the screenshot data
     );
   }
 

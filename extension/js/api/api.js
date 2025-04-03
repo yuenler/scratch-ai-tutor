@@ -11,8 +11,9 @@ window.BlockBuddy.API = window.BlockBuddy.API || {};
  * @param {Function} onThinking - Callback for thinking state
  * @param {Function} onResponse - Callback for response
  * @param {Function} onError - Callback for error
+ * @param {string|null} screenshotData - Optional base64 screenshot data
  */
-window.BlockBuddy.API.sendQuestionToAPI = function(question, projectId, onThinking, onResponse, onError) {
+window.BlockBuddy.API.sendQuestionToAPI = function(question, projectId, onThinking, onResponse, onError, screenshotData) {
   // Start thinking indicator
   onThinking();
   
@@ -33,6 +34,12 @@ window.BlockBuddy.API.sendQuestionToAPI = function(question, projectId, onThinki
   // Add token if available
   if (token) {
     requestData.projectToken = token;
+  }
+  
+  // Add screenshot if available
+  if (screenshotData) {
+    requestData.screenshot = screenshotData;
+    console.log("Including screenshot with request");
   }
   
   // Add chat history for context

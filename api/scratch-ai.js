@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         console.error('Failed to parse JSON body:', error);
       }
     }
-    const { projectId, question, projectToken, chatHistory, useThinkingModel = true } = body;
+    const { projectId, question, projectToken, chatHistory, useThinkingModel = true, screenshot } = body;
     if (!projectId || !question) {
       return res.status(400).json({ error: "Missing 'projectId' or 'question' in request body." });
     }
@@ -59,13 +59,34 @@ Below are the blocks from the user's project in scratchblocks syntax. If what yo
 
 ${JSON.stringify(result.blocksText, null, 2)}`;
 
-    // Build message array for OpenAI
-    const messages = [
-      { 
-        role: "system", 
+    // Prepare the system message (add screenshot if available)
+    let systemMessage;
+    if (screenshot) {
+      console.log("Screenshot included, adding to system message");
+      systemMessage = {
+        role: "system",
+        content: [
+          {
+            type: "text",
+            text: systemPrompt + "\n\nI've also included a screenshot of the user's Scratch project to help you understand what they're working on:"
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:image/jpeg;base64,${screenshot}`
+            }
+          }
+        ]
+      };
+    } else {
+      systemMessage = {
+        role: "system",
         content: systemPrompt
-      }
-    ];
+      };
+    }
+    
+    // Build message array for OpenAI
+    const messages = [systemMessage];
     
     // Add chat history if available
     if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
@@ -78,19 +99,19 @@ ${JSON.stringify(result.blocksText, null, 2)}`;
           });
         }
       });
-    } else {
-      // Add current prompt
-      messages.push({
-        role: "user",
-        content: question,
-      });
     }
+    
+    // Add current user question as text
+    messages.push({
+      role: "user",
+      content: question
+    });
 
     console.log("Messages array:", JSON.stringify(messages, null, 2));
 
     // Determine which model to use based on useThinkingModel parameter
     const modelName = useThinkingModel ? "o3-mini" : "gpt-4o-mini";
-    console.log(`Using model: ${modelName} (Thinking mode: ${useThinkingModel})`);
+    console.log(`Using model: ${modelName} (Thinking mode: ${useThinkingModel}, Screenshot: ${screenshot ? 'yes' : 'no'})`);
 
     const openai = new OpenAI(process.env.OPENAI_API_KEY);
     const completion = await openai.chat.completions.create({

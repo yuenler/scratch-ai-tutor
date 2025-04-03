@@ -21,13 +21,14 @@
         "js/utils/markdown.js",
         "js/utils/scratchblocks.js",
         "js/utils/voiceRecording.js",
+        "js/utils/screenshot.js",
         "js/api/api.js",
         "js/ui/ui.js",
         "content.js"
       ]
     }
   ],
-  "host_permissions": ["*://scratch.mit.edu/projects/*"],
+  "host_permissions": ["<all_urls>"],
   "web_accessible_resources": [
     {
       "resources": ["lib/*", "js/*"],

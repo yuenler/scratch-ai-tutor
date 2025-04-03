@@ -958,7 +958,6 @@ window.BlockBuddy.UI.createUI = function() {
   modelToggleContainer.style.display = 'flex';
   modelToggleContainer.style.alignItems = 'center';
   modelToggleContainer.style.gap = '8px';
-  modelToggleContainer.style.margin = '4px 0';
   
   // Create the model toggle switch
   const modelToggleSwitch = document.createElement('label');
@@ -1130,7 +1129,7 @@ window.BlockBuddy.UI.createUI = function() {
   const modelToggleOuterContainer = document.createElement('div');
   modelToggleOuterContainer.id = "modelToggleOuterContainer";
   modelToggleOuterContainer.style.display = "flex";
-  modelToggleOuterContainer.style.justifyContent = "center";
+  modelToggleOuterContainer.style.justifyContent = "space-between";
   modelToggleOuterContainer.style.alignItems = "center";
   modelToggleOuterContainer.style.padding = "8px 10px";
   modelToggleOuterContainer.style.borderTop = "1px solid #eee";
@@ -1138,6 +1137,86 @@ window.BlockBuddy.UI.createUI = function() {
   
   // Add the model toggle to the container below the input area
   modelToggleOuterContainer.appendChild(modelToggleContainer);
+  
+  // Create screenshot toggle container
+  const screenshotToggleContainer = document.createElement('div');
+  screenshotToggleContainer.style.display = 'flex';
+  screenshotToggleContainer.style.alignItems = 'center';
+  screenshotToggleContainer.style.gap = '6px';
+  
+  // Create screenshot toggle switch
+  const screenshotToggleSwitch = document.createElement('label');
+  screenshotToggleSwitch.style.position = 'relative';
+  screenshotToggleSwitch.style.display = 'inline-block';
+  screenshotToggleSwitch.style.width = '34px';
+  screenshotToggleSwitch.style.height = '18px';
+  screenshotToggleSwitch.style.margin = '0';
+  
+  // Create input for toggle
+  const screenshotToggleInput = document.createElement('input');
+  screenshotToggleInput.id = 'screenshotToggleInput';
+  screenshotToggleInput.type = 'checkbox';
+  screenshotToggleInput.style.opacity = '0';
+  screenshotToggleInput.style.width = '0';
+  screenshotToggleInput.style.height = '0';
+  
+  // Check local storage for preference and set initial state
+  screenshotToggleInput.checked = window.BlockBuddy.Storage.getScreenshotPreference();
+  
+  // Create slider
+  const screenshotToggleSlider = document.createElement('span');
+  screenshotToggleSlider.style.position = 'absolute';
+  screenshotToggleSlider.style.cursor = 'pointer';
+  screenshotToggleSlider.style.top = '0';
+  screenshotToggleSlider.style.left = '0';
+  screenshotToggleSlider.style.right = '0';
+  screenshotToggleSlider.style.bottom = '0';
+  screenshotToggleSlider.style.transition = '0.4s';
+  screenshotToggleSlider.style.borderRadius = '34px';
+  screenshotToggleSlider.style.backgroundColor = screenshotToggleInput.checked ? '#4c97ff' : '#ccc';
+  
+  // Create circle inside toggle
+  const screenshotToggleCircle = document.createElement('span');
+  screenshotToggleCircle.style.position = 'absolute';
+  screenshotToggleCircle.style.content = '""';
+  screenshotToggleCircle.style.height = '14px';
+  screenshotToggleCircle.style.width = '14px';
+  screenshotToggleCircle.style.left = '2px';
+  screenshotToggleCircle.style.bottom = '2px';
+  screenshotToggleCircle.style.backgroundColor = 'white';
+  screenshotToggleCircle.style.transition = '0.4s';
+  screenshotToggleCircle.style.borderRadius = '50%';
+  screenshotToggleCircle.style.transform = screenshotToggleInput.checked ? 'translateX(16px)' : 'none';
+  
+  screenshotToggleSlider.appendChild(screenshotToggleCircle);
+  screenshotToggleSwitch.appendChild(screenshotToggleInput);
+  screenshotToggleSwitch.appendChild(screenshotToggleSlider);
+  
+  // Create the label for the screenshot toggle
+  const screenshotToggleLabel = document.createElement('span');
+  screenshotToggleLabel.textContent = 'Include Screenshot';
+  screenshotToggleLabel.style.fontSize = '12px';
+  screenshotToggleLabel.style.color = '#575e75';
+  screenshotToggleLabel.style.userSelect = 'none';
+  
+  screenshotToggleContainer.appendChild(screenshotToggleSwitch);
+  screenshotToggleContainer.appendChild(screenshotToggleLabel);
+  
+  // Add event listener to save preference
+  screenshotToggleInput.addEventListener('change', function() {
+    const isChecked = this.checked;
+    
+    // Update the toggle appearance
+    screenshotToggleSlider.style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
+    screenshotToggleCircle.style.transform = isChecked ? 'translateX(16px)' : 'none';
+    
+    // Save the preference
+    window.BlockBuddy.Storage.setScreenshotPreference(isChecked);
+    console.log(`Screenshot preference changed to: ${isChecked ? 'enabled' : 'disabled'}`);
+  });
+  
+  // Add the screenshot toggle to the outer container
+  modelToggleOuterContainer.appendChild(screenshotToggleContainer);
 
   // Create minimized button
   const minimizedButton = document.createElement("div");

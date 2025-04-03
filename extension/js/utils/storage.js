@@ -13,6 +13,7 @@ const MODEL_PREFERENCE_KEY = STORAGE_PREFIX + 'modelPreference';
 const PANEL_POSITION_KEY = STORAGE_PREFIX + 'panelPosition';
 const MINIMIZED_BUTTON_POSITION_KEY = STORAGE_PREFIX + 'minimizedButtonPosition';
 const UI_STATE_KEY = STORAGE_PREFIX + 'uiState';
+const SCREENSHOT_ENABLED_KEY = STORAGE_PREFIX + 'screenshotEnabled';
 
 // Store project tokens for reuse
 let projectTokens = {};
@@ -237,4 +238,15 @@ window.BlockBuddy.Storage.getUIState = function() {
 
 window.BlockBuddy.Storage.saveUIState = function(state) {
   localStorage.setItem(UI_STATE_KEY, JSON.stringify(state));
+};
+
+/**
+ * Add storage functions for screenshot preference
+ */
+window.BlockBuddy.Storage.getScreenshotPreference = function() {
+  return JSON.parse(localStorage.getItem(SCREENSHOT_ENABLED_KEY) || 'false');
+};
+
+window.BlockBuddy.Storage.setScreenshotPreference = function(value) {
+  localStorage.setItem(SCREENSHOT_ENABLED_KEY, JSON.stringify(value));
 };

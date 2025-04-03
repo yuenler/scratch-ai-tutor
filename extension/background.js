@@ -219,6 +219,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   
+  if (request.action === "captureScreen") {
+    // Capture the visible tab
+    chrome.tabs.captureVisibleTab(
+      sender.tab.windowId,
+      { format: 'jpeg', quality: 70 },
+      dataUrl => {
+        if (chrome.runtime.lastError) {
+          console.error("Error capturing screen:", chrome.runtime.lastError);
+          sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        
+        console.log("Screen captured successfully");
+        sendResponse({ success: true, screenshot: dataUrl });
+      }
+    );
+    
+    // Return true to indicate we'll send a response asynchronously
+    return true;
+  }
+  
   if (request.action === "renderScratchblocks") {
     // Execute the rendering function in the tab that sent the message
     chrome.scripting.executeScript({
