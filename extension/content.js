@@ -129,7 +129,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   }
   
   // Function to process the question after attempting to save
-  function processQuestion(question) {
+  async function processQuestion(question) {
     // Get project ID
     const projectId = window.BlockBuddy.Utils.getProjectId(window.location.href);
     if (!projectId) {
@@ -153,24 +153,48 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     const screenshotEnabled = window.BlockBuddy.Storage.getScreenshotPreference();
     
     if (screenshotEnabled) {
-      // Try to capture screenshot
-      window.BlockBuddy.Screenshot.captureProjectScreen().then(screenshotData => {
-        // Process the screenshot if available
-        if (screenshotData) {
-          // Extract base64 data from data URL if needed
-          const processedScreenshot = window.BlockBuddy.Screenshot.processBase64Image(screenshotData);
-          console.log("Screenshot captured successfully, sending with question");
+    
+      console.log("Getting extension UI elements:", panel, minimizedButton);
+      
+      // Store original visibility states
+      const panelWasVisible = panel && window.getComputedStyle(panel).display !== 'none';
+      const buttonWasVisible = minimizedButton && window.getComputedStyle(minimizedButton).display !== 'none';
+      
+      // Temporarily hide the extension UI
+      if (panel) panel.style.display = 'none';
+      if (minimizedButton) minimizedButton.style.display = 'none';
+      
+      // Short delay to ensure UI is hidden before capturing
+      setTimeout(async () => {
+        try {
+          // Try to capture screenshot
+          const screenshotData = await window.BlockBuddy.Screenshot.captureProjectScreen();
           
-          // Send the question with the screenshot
-          sendQuestionWithData(question, projectId, thinkingIndicator, processedScreenshot);
-        } else {
-          console.log("Screenshot capture failed, sending question without screenshot");
+          // Restore the extension UI visibility
+          if (panel && panelWasVisible) panel.style.display = '';
+          if (minimizedButton && buttonWasVisible) minimizedButton.style.display = '';
+          
+          // Process the screenshot if available
+          if (screenshotData) {
+            // Extract base64 data from data URL if needed
+            const processedScreenshot = window.BlockBuddy.Screenshot.processBase64Image(screenshotData);
+            console.log("Screenshot captured successfully, sending with question");
+            
+            // Send the question with the screenshot
+            sendQuestionWithData(question, projectId, thinkingIndicator, processedScreenshot);
+          } else {
+            console.log("Screenshot capture failed, sending question without screenshot");
+            sendQuestionWithData(question, projectId, thinkingIndicator, null);
+          }
+        } catch (error) {
+          // Ensure UI is restored even if there's an error
+          if (panel && panelWasVisible) panel.style.display = '';
+          if (minimizedButton && buttonWasVisible) minimizedButton.style.display = '';
+          
+          console.error("Error capturing screenshot:", error);
           sendQuestionWithData(question, projectId, thinkingIndicator, null);
         }
-      }).catch(error => {
-        console.error("Error capturing screenshot:", error);
-        sendQuestionWithData(question, projectId, thinkingIndicator, null);
-      });
+      }, 50); // Short delay to ensure UI is hidden
     } else {
       // Send without screenshot
       sendQuestionWithData(question, projectId, thinkingIndicator, null);
