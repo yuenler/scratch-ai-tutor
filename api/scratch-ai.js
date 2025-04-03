@@ -59,39 +59,28 @@ Below are the blocks from the user's project in scratchblocks syntax. If what yo
 
 ${JSON.stringify(result.blocksText, null, 2)}`;
 
-    // Prepare the system message (add screenshot if available)
-    let systemMessage;
-    if (screenshot) {
-      console.log("Screenshot included, adding to system message");
-      systemMessage = {
-        role: "system",
-        content: [
-          {
-            type: "text",
-            text: systemPrompt + "\n\nI've also included a screenshot of the user's Scratch project to help you understand what they're working on:"
-          },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:image/jpeg;base64,${screenshot}`
-            }
-          }
-        ]
-      };
-    } else {
-      systemMessage = {
-        role: "system",
-        content: systemPrompt
-      };
-    }
-    
     // Build message array for OpenAI
-    const messages = [systemMessage];
+    const messages = [
+      { 
+        role: "system", 
+        content: systemPrompt
+      }
+    ];
     
-    // Add chat history if available
+    // Process chat history and current question
+    const hasCurrentMessage = chatHistory && 
+                             Array.isArray(chatHistory) && 
+                             chatHistory.length > 0 && 
+                             chatHistory[chatHistory.length - 1].role === 'user' && 
+                             chatHistory[chatHistory.length - 1].content === question;
+    
     if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
       console.log(`Adding ${chatHistory.length} messages from chat history for context`);
-      chatHistory.forEach(msg => {
+      
+      // Add all messages except possibly the last one (if it's a duplicate of the current question)
+      const messagesToAdd = hasCurrentMessage ? chatHistory.slice(0, -1) : chatHistory;
+      
+      messagesToAdd.forEach(msg => {
         if (msg.role === 'user' || msg.role === 'assistant') {
           messages.push({
             role: msg.role,
@@ -101,11 +90,71 @@ ${JSON.stringify(result.blocksText, null, 2)}`;
       });
     }
     
-    // Add current user question as text
-    messages.push({
-      role: "user",
-      content: question
-    });
+    // Add or modify the current user message with screenshot if available
+    if (screenshot) {
+      console.log("Screenshot included, adding to user message");
+      if (hasCurrentMessage) {
+        // If the current message is already in chat history, just modify the last message in our messages array
+        if (messages.length > 1 && messages[messages.length - 1].role === 'user') {
+          // Replace the last message with multimodal content
+          messages[messages.length - 1] = {
+            role: "user",
+            content: [
+              { 
+                type: "text", 
+                text: question 
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${screenshot}`
+                }
+              }
+            ]
+          };
+        } else {
+          // This should not happen normally, but just in case
+          messages.push({
+            role: "user",
+            content: [
+              { 
+                type: "text", 
+                text: question 
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${screenshot}`
+                }
+              }
+            ]
+          });
+        }
+      } else {
+        // Add a new message with screenshot
+        messages.push({
+          role: "user",
+          content: [
+            { 
+              type: "text", 
+              text: question 
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${screenshot}`
+              }
+            }
+          ]
+        });
+      }
+    } else if (!hasCurrentMessage) {
+      // Only add the text question if it's not already included in the chat history
+      messages.push({
+        role: "user",
+        content: question
+      });
+    }
 
     console.log("Messages array:", JSON.stringify(messages, null, 2));
 
