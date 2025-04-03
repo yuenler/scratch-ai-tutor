@@ -1014,17 +1014,44 @@ window.BlockBuddy.UI.createUI = function() {
   modelToggleContainer.appendChild(modelToggleLabel);
   
   // Add event listener to save preference
-  modelToggleInput.addEventListener('change', function() {
-    const isChecked = this.checked;
+modelToggleInput.addEventListener('change', function() {
+  const isChecked = this.checked;
+  
+  // Update the toggle appearance
+  modelToggleSlider.style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
+  modelToggleCircle.style.transform = isChecked ? 'translateX(16px)' : 'none';
+  
+  // Save the preference
+  window.BlockBuddy.Storage.setModelPreference(isChecked);
+  console.log(`Model preference changed to: ${isChecked ? 'thinking (o3-mini)' : 'non-thinking (4o-mini)'}`);
+  
+  // If thinking mode is enabled, disable screenshot toggle
+  if (isChecked) {
+    // Turn off screenshot toggle
+    screenshotToggleInput.checked = false;
+    window.BlockBuddy.Storage.setScreenshotPreference(false);
+    screenshotToggleSlider.style.backgroundColor = '#ccc';
+    screenshotToggleCircle.style.transform = 'none';
     
-    // Update the toggle appearance
-    modelToggleSlider.style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
-    modelToggleCircle.style.transform = isChecked ? 'translateX(16px)' : 'none';
+    // Disable screenshot toggle
+    screenshotToggleInput.disabled = true;
+    screenshotToggleSlider.style.opacity = '0.5';
+    screenshotToggleSlider.style.cursor = 'not-allowed';
+    screenshotToggleLabel.style.opacity = '0.5';
     
-    // Save the preference
-    window.BlockBuddy.Storage.setModelPreference(isChecked);
-    console.log(`Model preference changed to: ${isChecked ? 'thinking (o3-mini)' : 'non-thinking (4o-mini)'}`);
-  });
+    // Add tooltip to show explanation
+    screenshotToggleContainer.title = "Screenshot feature is disabled in Thinking Mode - the thinking model doesn't support image input";
+  } else {
+    // Re-enable screenshot toggle
+    screenshotToggleInput.disabled = false;
+    screenshotToggleSlider.style.opacity = '1';
+    screenshotToggleSlider.style.cursor = 'pointer';
+    screenshotToggleLabel.style.opacity = '1';
+    
+    // Remove tooltip
+    screenshotToggleContainer.title = "";
+  }
+});
   
   // Create chat body
   const chatBody = document.createElement("div");
@@ -1218,6 +1245,22 @@ window.BlockBuddy.UI.createUI = function() {
   // Add the screenshot toggle to the outer container
   modelToggleOuterContainer.appendChild(screenshotToggleContainer);
 
+  // Check if thinking mode is enabled and update screenshot toggle state accordingly
+  if (modelToggleInput.checked) {
+    // Disable screenshot toggle if thinking mode is on
+    screenshotToggleInput.disabled = true;
+    screenshotToggleInput.checked = false;
+    screenshotToggleSlider.style.backgroundColor = '#ccc';
+    screenshotToggleCircle.style.transform = 'none';
+    screenshotToggleSlider.style.opacity = '0.5';
+    screenshotToggleSlider.style.cursor = 'not-allowed';
+    screenshotToggleLabel.style.opacity = '0.5';
+    screenshotToggleContainer.title = "Screenshot feature is disabled in Thinking Mode - the thinking model doesn't support image input";
+    
+    // Also update storage
+    window.BlockBuddy.Storage.setScreenshotPreference(false);
+  }
+  
   // Create minimized button
   const minimizedButton = document.createElement("div");
   minimizedButton.id = "minimizedButton";
@@ -1377,6 +1420,8 @@ window.BlockBuddy.UI.createUI = function() {
       minimizedButton.style.bottom = 'auto';
     }
   });
+
+  
   
   document.addEventListener('mouseup', () => {
     if (isDraggingPanel) {
