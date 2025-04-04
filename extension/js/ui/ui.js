@@ -1156,7 +1156,8 @@ modelToggleInput.addEventListener('change', function() {
   const modelToggleOuterContainer = document.createElement('div');
   modelToggleOuterContainer.id = "modelToggleOuterContainer";
   modelToggleOuterContainer.style.display = "flex";
-  modelToggleOuterContainer.style.justifyContent = "space-between";
+  modelToggleOuterContainer.style.justifyContent = "center";
+  modelToggleOuterContainer.style.gap = "40px";
   modelToggleOuterContainer.style.alignItems = "center";
   modelToggleOuterContainer.style.padding = "8px 10px";
   modelToggleOuterContainer.style.borderTop = "1px solid #eee";
