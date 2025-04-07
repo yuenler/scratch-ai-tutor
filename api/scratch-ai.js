@@ -54,11 +54,7 @@ When showing code or making a reference to a block, use the \`\`\`scratchblocks 
 \`\`\`scratchblocks
 when green flag clicked
 say [Hello!] for (2) seconds
-\`\`\`
-
-Below are the blocks from the user's project in scratchblocks syntax. If what you see below is null, inform the user you can't see their code and answer based on general knowledge:
-
-${JSON.stringify(result.blocksText, null, 2)}`;
+\`\`\``;
 
     // Build message array for OpenAI
     const messages = [
@@ -68,6 +64,19 @@ ${JSON.stringify(result.blocksText, null, 2)}`;
       }
     ];
     
+    // Format user message content with question first, then blocks and screenshot info
+    const userMessageContent = question + (result.blocksText ? `
+
+Below are my project's blocks in scratchblocks syntax:
+
+${JSON.stringify(result.blocksText, null, 2)}` : `
+
+I don't have any blocks from my Scratch project to show you right now. My project is either empty or there was an error loading it.`) + (screenshot ? `
+
+I've also included a screenshot of my Scratch environment.` : `
+
+I don't have a screenshot of my Scratch environment to share.`);
+
     // Process chat history and current question
     const hasCurrentMessage = chatHistory && 
                              Array.isArray(chatHistory) && 
@@ -103,7 +112,7 @@ ${JSON.stringify(result.blocksText, null, 2)}`;
             content: [
               { 
                 type: "text", 
-                text: question 
+                text: userMessageContent
               },
               {
                 type: "image_url",
@@ -120,7 +129,7 @@ ${JSON.stringify(result.blocksText, null, 2)}`;
             content: [
               { 
                 type: "text", 
-                text: question 
+                text: userMessageContent
               },
               {
                 type: "image_url",
@@ -138,7 +147,7 @@ ${JSON.stringify(result.blocksText, null, 2)}`;
           content: [
             { 
               type: "text", 
-              text: question 
+              text: userMessageContent
             },
             {
               type: "image_url",
@@ -153,7 +162,7 @@ ${JSON.stringify(result.blocksText, null, 2)}`;
       // Only add the text question if it's not already included in the chat history
       messages.push({
         role: "user",
-        content: question
+        content: userMessageContent
       });
     }
 
