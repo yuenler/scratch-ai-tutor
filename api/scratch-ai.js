@@ -106,86 +106,27 @@ I don't have a screenshot of my Scratch environment to share.`);
     
     // Add or modify the current user message with screenshot if available
     if (screenshot) {
-      console.log("Screenshot included, adding to user message");
-      if (hasCurrentMessage) {
-        // If the current message is already in chat history, just modify the last message in our messages array
-        if (messages.length > 1 && messages[messages.length - 1].role === 'user') {
-          // Replace the last message with multimodal content
-          messages[messages.length - 1] = {
-            role: "user",
-            content: [
-              { 
-                type: "text", 
-                text: userMessageContent
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${screenshot}`
-                }
-              }
-            ]
-          };
-        } else {
-          // This should not happen normally, but just in case
-          messages.push({
-            role: "user",
-            content: [
-              { 
-                type: "text", 
-                text: userMessageContent
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${screenshot}`
-                }
-              }
-            ]
-          });
-        }
-      } else {
-        // Add a new message with screenshot
-        messages.push({
-          role: "user",
-          content: [
-            { 
-              type: "text", 
-              text: userMessageContent
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${screenshot}`
-              }
+      messages.push({
+        role: "user",
+        content: [
+          { 
+            type: "text", 
+            text: userMessageContent
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:image/jpeg;base64,${screenshot}`
             }
-          ]
-        });
-      }
+          }
+        ]
+      });
     } else {
-      // No screenshot case
-      if (hasCurrentMessage) {
-        // If the current message is already in chat history, check if we can modify the last message
-        if (messages.length > 0 && messages[messages.length - 1].role === 'user') {
-          // Replace the last message with the current content
-          messages[messages.length - 1] = {
-            role: "user",
-            content: userMessageContent
-          };
-        } else {
-          // This should not happen normally, but just in case
-          messages.push({
-            role: "user",
-            content: userMessageContent
-          });
-        }
-      } else {
-        // Add a new message without screenshot
-        messages.push({
-          role: "user",
-          content: userMessageContent
-        });
-      }
+      // No screenshot case - always add the message since we've already filtered out duplicates
+      messages.push({
+        role: "user",
+        content: userMessageContent
+      });
     }
 
     console.log("Messages array:", JSON.stringify(messages, null, 2));
