@@ -77,12 +77,16 @@ I've also included a screenshot of my Scratch environment.` : `
 
 I don't have a screenshot of my Scratch environment to share.`);
 
+    console.log("User message content:", userMessageContent);
+
     // Process chat history and current question
     const hasCurrentMessage = chatHistory && 
                              Array.isArray(chatHistory) && 
                              chatHistory.length > 0 && 
                              chatHistory[chatHistory.length - 1].role === 'user' && 
                              chatHistory[chatHistory.length - 1].content === question;
+    
+    console.log("Has current message:", hasCurrentMessage);
     
     if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
       console.log(`Adding ${chatHistory.length} messages from chat history for context`);
@@ -158,12 +162,30 @@ I don't have a screenshot of my Scratch environment to share.`);
           ]
         });
       }
-    } else if (!hasCurrentMessage) {
-      // Only add the text question if it's not already included in the chat history
-      messages.push({
-        role: "user",
-        content: userMessageContent
-      });
+    } else {
+      // No screenshot case
+      if (hasCurrentMessage) {
+        // If the current message is already in chat history, check if we can modify the last message
+        if (messages.length > 0 && messages[messages.length - 1].role === 'user') {
+          // Replace the last message with the current content
+          messages[messages.length - 1] = {
+            role: "user",
+            content: userMessageContent
+          };
+        } else {
+          // This should not happen normally, but just in case
+          messages.push({
+            role: "user",
+            content: userMessageContent
+          });
+        }
+      } else {
+        // Add a new message without screenshot
+        messages.push({
+          role: "user",
+          content: userMessageContent
+        });
+      }
     }
 
     console.log("Messages array:", JSON.stringify(messages, null, 2));
