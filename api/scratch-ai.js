@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     
     // Create system prompt with project blocks
     const systemPrompt = `You are a friendly Scratch tutor for kids. Rules:
-1. Use simple language, break down complex concepts into steps
+1. Use simple language and give concise answers. If the question is complex and requires multiple steps, only respond with one step at a time.
 2. Guide with hints and socratic questioning, don't give direct answers. Encourage them to experiment.
 3. Always use \`\`\`scratchblocks syntax for ALL code examples. NEVER make a reference to a scratch block without using the syntax, even if it's just a single block that you are suggesting they use.
 4. Keep answers concise.
