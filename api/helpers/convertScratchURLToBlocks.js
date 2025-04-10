@@ -256,7 +256,7 @@ function customBlock(block) {
 
 // Fetch project JSON data from a Scratch URL.
 async function getProjectFromUrl(url, providedToken = null) {
-  const match = url.match(/scratch\.mit\.edu\/projects\/(\d+)\//);
+  const match = url.match(/scratch\.mit\.edu\/projects\/(\d+)(\/)?/);
   if (!match) return null;
   const projectId = match[1];
 
@@ -318,9 +318,12 @@ async function getProjectFromUrl(url, providedToken = null) {
 // Generate scratchblocks scripts from a project.
 function generateScratchblocks(project) {
   const targets = project.targets;
-  const scripts = [];
+  const targetScripts = [];
 
   for (const target of targets) {
+    const scripts = [];
+    
+    // Get all scripts for this target
     for (const blockId in target.blocks) {
       const block = target.blocks[blockId];
       const isStart =
@@ -332,8 +335,18 @@ function generateScratchblocks(project) {
         scripts.push(script);
       }
     }
+    
+    // Only add targets that have scripts
+    if (scripts.length > 0) {
+      targetScripts.push({
+        type: target.isStage ? "Stage" : "Sprite",
+        name: target.name,
+        scripts: scripts
+      });
+    }
   }
-  return scripts;
+  
+  return targetScripts;
 }
 
 // Recursively generate a script starting from a block.
@@ -461,7 +474,7 @@ function getFieldName(mapping, block, fieldName) {
 }
 
 // Create the final blocks string with indentation.
-function blockString(scripts) {
+function blockString(targetScripts) {
   function indentString(block, indent) {
     if (!block) return "";
     let output = " ".repeat(indent) + block.label + "\n";
@@ -481,9 +494,21 @@ function blockString(scripts) {
   }
 
   let output = "";
-  for (const script of scripts) {
-    output += indentString(script, 0);
-    output += "\n";
+  for (const target of targetScripts) {
+    // Add a header for each target with its type and name
+    output += `=== ${target.type}: ${target.name} ===\n\n`;
+    
+    // Start scratchblocks code block
+    output += "```scratchblocks\n";
+    
+    // Add all scripts for this target
+    for (const script of target.scripts) {
+      output += indentString(script, 0);
+      output += "\n";
+    }
+    
+    // End scratchblocks code block
+    output += "```\n\n";
   }
   return output;
 }
