@@ -339,22 +339,72 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     // Remove scratchblocks code from TTS input to avoid reading code blocks
     const cleanedText = text.replace(/```scratchblocks[\s\S]*?```/g, "A code block has been provided. ");
     
+    // Create a placeholder for the audio player with a loading indicator
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.className = 'audio-loading-indicator';
+    loadingIndicator.style.display = 'flex';
+    loadingIndicator.style.alignItems = 'center';
+    loadingIndicator.style.marginTop = '10px';
+    loadingIndicator.style.color = '#666';
+    loadingIndicator.style.fontStyle = 'italic';
+    loadingIndicator.textContent = 'Generating audio...';
+    
+    // Add a spinning animation
+    const spinner = document.createElement('div');
+    spinner.className = 'loading-spinner';
+    spinner.style.width = '16px';
+    spinner.style.height = '16px';
+    spinner.style.border = '2px solid #ccc';
+    spinner.style.borderTopColor = '#4c97ff';
+    spinner.style.borderRadius = '50%';
+    spinner.style.marginRight = '8px';
+    spinner.style.animation = 'spin 1s linear infinite';
+    
+    // Add a style for the spinning animation to the shadow DOM
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    shadow.appendChild(style);
+    
+    loadingIndicator.prepend(spinner);
+    messageElement.appendChild(loadingIndicator);
+    
     // Generate TTS
     window.BlockBuddy.API.generateTTS(
       cleanedText,
       (audioData, audioFormat) => {
         console.log("TTS generated successfully");
+        
+        // Remove loading indicator
+        if (loadingIndicator && loadingIndicator.parentNode) {
+          loadingIndicator.parentNode.removeChild(loadingIndicator);
+        }
+        
         if (messageElement) {
           const audioPlayer = window.BlockBuddy.UI.createAudioPlayer(
             audioData, 
             audioFormat, 
-            autoplay // Allow autoplay based on user preference
+            autoplay
           );
           messageElement.appendChild(audioPlayer.container);
         }
       },
       (error) => {
         console.error("Error generating TTS:", error);
+        
+        // Remove loading indicator and show error
+        if (loadingIndicator && loadingIndicator.parentNode) {
+          loadingIndicator.textContent = 'Failed to generate audio';
+          loadingIndicator.style.color = '#e74c3c';
+          // Remove spinner
+          if (spinner && spinner.parentNode) {
+            spinner.parentNode.removeChild(spinner);
+          }
+        }
       }
     );
   }
