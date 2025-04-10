@@ -393,29 +393,52 @@ window.BlockBuddy.UI.createUI = function() {
       margin-bottom: 15px;
       display: flex;
       flex-direction: column;
+      animation: slideInUp 0.5s ease;
+      position: relative;
     }
     
     .message-header {
+      display: flex;
+      align-items: center;
       font-size: 12px;
-      color: #888;
+      color: #666;
       margin-bottom: 5px;
+      padding: 0 2px;
+    }
+    
+    .message-icon {
+      margin-right: 5px;
+      font-size: 14px;
+    }
+    
+    .message-title {
+      font-weight: 600;
     }
     
     .message-content {
-      padding: 10px;
-      border-radius: 8px;
+      padding: 12px 16px;
+      border-radius: 12px;
       max-width: 100%;
       word-wrap: break-word;
+      animation: fadeIn 0.5s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+    }
+    
+    .message-content:hover {
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
     .user-message .message-content {
-      background-color: #e6f2ff;
+      background-color: #e1edff;
       align-self: flex-end;
+      border-bottom-right-radius: 4px;
     }
     
     .assistant-message .message-content {
-      background-color: #f1f1f1;
+      background-color: #f5f5f7;
       align-self: flex-start;
+      border-bottom-left-radius: 4px;
     }
     
     /* Styles for scratchblocks */
@@ -447,6 +470,17 @@ window.BlockBuddy.UI.createUI = function() {
       align-items: center;
       padding: 10px;
       color: #888;
+      margin-bottom: 15px;
+      background-color: #f8f8f8;
+      border-radius: 8px;
+      padding: 12px 16px;
+      animation: scaleIn 0.3s ease;
+      width: fit-content;
+    }
+    
+    .thinking-icon {
+      margin-right: 8px;
+      font-size: 16px;
     }
     
     .thinking-dots {
@@ -458,7 +492,7 @@ window.BlockBuddy.UI.createUI = function() {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: #888;
+      background-color: #4c97ff;
       margin: 0 2px;
       animation: pulse 1.5s infinite;
     }
@@ -480,30 +514,82 @@ window.BlockBuddy.UI.createUI = function() {
       }
     }
     
+    @keyframes slideInUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    
+    @keyframes scaleIn {
+      0% {
+        transform: scale(0.95);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-5px);
+      }
+      60% {
+        transform: translateY(-2px);
+      }
+    }
+    
     #inputContainer {
       display: flex;
       padding: 10px;
       border-top: 1px solid #ddd;
+      background-color: #fff;
+      transition: box-shadow 0.3s ease;
+    }
+    
+    /* Add subtle shadow when focused */
+    #inputContainer.focused {
+      box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.05);
     }
     
     #userInput {
       flex: 1;
       border: 1px solid #ddd;
       border-radius: 18px;
-      padding: 8px 15px;
+      padding: 10px 15px;
       font-size: 14px;
       resize: none;
       outline: none;
       max-height: 100px;
       overflow-y: auto;
       cursor: text;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
     
     #userInput:focus {
       border-color: #4c97ff;
+      box-shadow: 0 0 0 2px rgba(76, 151, 255, 0.1);
     }
     
-    #sendButton {
+    .send-button {
       background-color: #4c97ff;
       color: white;
       border: none;
@@ -511,14 +597,26 @@ window.BlockBuddy.UI.createUI = function() {
       width: 36px;
       height: 36px;
       margin-left: 10px;
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      transform-origin: center;
     }
     
-    #sendButton:hover {
-      background-color: #3373cc;
+    .send-button:hover {
+      background-color: #3d7de0;
+      transform: scale(1.05);
+    }
+    
+    .send-button:active {
+      transform: scale(0.95);
+    }
+    
+    .send-button-icon {
+      width: 18px;
+      height: 18px;
     }
     
     #voiceRecordButton {
@@ -1088,7 +1186,7 @@ modelToggleInput.addEventListener('change', function() {
 
   // Create send button
   const sendButton = document.createElement("button");
-  sendButton.id = "sendButton";
+  sendButton.className = "send-button";
   sendButton.style.background = "#4c97ff";
   sendButton.style.color = "white";
   sendButton.style.border = "none";
@@ -1572,6 +1670,19 @@ modelToggleInput.addEventListener('change', function() {
     window.BlockBuddy.UI.hidePanel(panel, minimizedButton);
   });
 
+  // Initialize event listeners
+  
+  // Handle input focus events for styling
+  userInput.addEventListener('focus', () => {
+    inputContainer.classList.add('focused');
+  });
+  
+  userInput.addEventListener('blur', () => {
+    inputContainer.classList.remove('focused');
+  });
+  
+  // Initialize resizing functionality
+  
   // Return the created UI elements
   return {
     container,
@@ -1581,7 +1692,7 @@ modelToggleInput.addEventListener('change', function() {
     systemMessageEl: shadow.getElementById("systemMessage"),
     chatBodyEl: shadow.getElementById("chatBody"),
     userInputEl: shadow.getElementById("userInput"),
-    sendButtonEl: shadow.getElementById("sendButton"),
+    sendButtonEl: shadow.querySelector(".send-button"),
     closeButtonEl: shadow.querySelector(".close-button"),
     clearChatButtonEl: shadow.getElementById("clearChatButton"),
     voiceRecordButtonEl: shadow.getElementById("voiceRecordButton"),
@@ -1767,7 +1878,7 @@ window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, auto
   
   // Create the label for the toggle
   const toggleLabel = document.createElement('span');
-  toggleLabel.textContent = 'Autoplay';
+  toggleLabel.textContent = 'Autoplay audio';
   toggleLabel.style.fontSize = '12px';
   toggleLabel.style.color = '#575e75';
   toggleLabel.style.userSelect = 'none';
@@ -1884,6 +1995,10 @@ window.BlockBuddy.UI.addMessage = function(chatBody, shadow, content, type, audi
   const messageDiv = document.createElement("div");
   messageDiv.className = `message ${type}-message`;
   
+  // Apply initial state for animation
+  messageDiv.style.opacity = "0";
+  messageDiv.style.transform = "translateY(20px)";
+  
   const messageHeader = document.createElement("div");
   messageHeader.className = "message-header";
   
@@ -1925,6 +2040,13 @@ window.BlockBuddy.UI.addMessage = function(chatBody, shadow, content, type, audi
     
     chatBody.appendChild(messageDiv);
     
+    // Trigger animation after a short delay
+    setTimeout(() => {
+      messageDiv.style.opacity = "1";
+      messageDiv.style.transform = "translateY(0)";
+      messageDiv.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+    }, 10);
+    
     // Scroll to bottom
     chatBody.scrollTop = chatBody.scrollHeight;
     
@@ -1934,13 +2056,20 @@ window.BlockBuddy.UI.addMessage = function(chatBody, shadow, content, type, audi
       setTimeout(() => {
         // Only render scratchblocks in this message container
         window.BlockBuddy.ScratchBlocks.renderScratchblocks(shadow, messageContent);
-      }, 100);
+      }, 300); // Longer delay to ensure animation completes first
     }
   } else {
     messageContent.textContent = content;
     messageDiv.appendChild(messageHeader);
     messageDiv.appendChild(messageContent);
     chatBody.appendChild(messageDiv);
+    
+    // Trigger animation after a short delay
+    setTimeout(() => {
+      messageDiv.style.opacity = "1";
+      messageDiv.style.transform = "translateY(0)";
+      messageDiv.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+    }, 10);
     
     // Scroll to bottom
     chatBody.scrollTop = chatBody.scrollHeight;
@@ -1959,13 +2088,27 @@ window.BlockBuddy.UI.showThinkingIndicator = function(chatBody) {
   const thinkingDiv = document.createElement("div");
   thinkingDiv.className = "thinking-indicator";
   thinkingDiv.innerHTML = `
-    Thinking<div class="thinking-dots">
+    <div class="thinking-icon">🧩</div>
+    <div>Thinking<div class="thinking-dots">
       <div class="dot"></div>
       <div class="dot"></div>
       <div class="dot"></div>
-    </div>
+    </div></div>
   `;
+  
+  // Apply initial state for animation
+  thinkingDiv.style.opacity = "0";
+  thinkingDiv.style.transform = "scale(0.95)";
+  
   chatBody.appendChild(thinkingDiv);
+  
+  // Trigger animation
+  setTimeout(() => {
+    thinkingDiv.style.opacity = "1";
+    thinkingDiv.style.transform = "scale(1)";
+    thinkingDiv.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+  }, 10);
+  
   chatBody.scrollTop = chatBody.scrollHeight;
   return thinkingDiv;
 };
