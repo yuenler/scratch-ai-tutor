@@ -125,10 +125,10 @@ async function sendQuestionToBackend(data) {
   console.log("Sending question to backend API:", data);
   
   try {
-    // API endpoint URL
-    const apiUrl = "https://scratch-ai-tutor.vercel.app/api/scratch-ai";
+    // API endpoint URL 
+    const apiUrl = "https://scratch-ai-tutor.vercel.app/api/chat-response";
     
-    // Send the request
+    // Create a fetch request to the API
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -141,6 +141,99 @@ async function sendQuestionToBackend(data) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("API error:", response.status, errorText);
+      throw new Error(`Server error (${response.status}): ${errorText || "Unknown error"}`);
+    }
+    
+    // Return a function that takes a callback to handle the streaming data
+    return {
+      processStream: async function(onChunk) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            
+            if (done) {
+              // Process any remaining data in the buffer
+              if (buffer.length > 0) {
+                processBufferChunks(buffer, onChunk);
+              }
+              break;
+            }
+            
+            // Decode and add to buffer
+            buffer += decoder.decode(value, { stream: true });
+            
+            // Process complete messages
+            const messages = buffer.split('\n\n');
+            buffer = messages.pop() || ''; // Keep the last incomplete chunk
+            
+            // Process each complete message
+            for (const message of messages) {
+              processMessage(message, onChunk);
+            }
+          }
+        } catch (error) {
+          console.error("Error reading stream:", error);
+          throw error;
+        } finally {
+          reader.releaseLock();
+        }
+      }
+    };
+  } catch (error) {
+    console.error("Error sending question to API:", error);
+    throw error;
+  }
+}
+
+// Helper function to process a message
+function processMessage(message, callback) {
+  if (message.startsWith('data: ')) {
+    try {
+      const data = JSON.parse(message.slice(6));
+      if (data) {
+        callback(data);
+      }
+    } catch (e) {
+      console.error('Error parsing streaming data:', e, message);
+    }
+  }
+}
+
+// Helper function to process buffer chunks
+function processBufferChunks(buffer, callback) {
+  const chunks = buffer.split('\n\n');
+  for (const chunk of chunks) {
+    processMessage(chunk, callback);
+  }
+}
+
+// Function to send text for TTS conversion
+async function sendTextToTTS(text) {
+  console.log("Sending text for TTS conversion:", text.substring(0, 100) + (text.length > 100 ? "..." : ""));
+  
+  try {
+    // API endpoint URL
+    const apiUrl = "https://scratch-ai-tutor.vercel.app/api/tts";
+    
+    console.log("Sending TTS request to:", apiUrl);
+    
+    // Send the request
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ text })
+    });
+    
+    // Check if the response is ok
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("TTS API error:", response.status, errorText);
       return { 
         error: `Server error (${response.status}): ${errorText || "Unknown error"}` 
       };
@@ -148,14 +241,17 @@ async function sendQuestionToBackend(data) {
     
     // Parse the response
     const result = await response.json();
-    console.log("API response:", result);
+    console.log("TTS API response received, audio data length:", result.audio ? result.audio.length : 0);
+    
+    if (!result.audio) {
+      console.error("TTS API returned no audio data");
+      return { error: "No audio data received from TTS API" };
+    }
     
     return result;
   } catch (error) {
-    console.error("Error sending question to API:", error);
-    return { 
-      error: `Network error: ${error.message}` 
-    };
+    console.error("Error sending text to TTS API:", error);
+    return { error: error.message || "Error generating speech" };
   }
 }
 
@@ -199,13 +295,16 @@ async function transcribeAudioToBackend(data) {
 }
 
 // Listen for messages from content script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "executeScript") {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("Background script received message:", message.action);
+  
+  // Handle the message based on its action
+  if (message.action === "executeScript") {
     // Execute the script in the tab that sent the message
     chrome.scripting.executeScript({
       target: { tabId: sender.tab.id },
-      func: request.func,
-      args: request.args || []
+      func: message.func,
+      args: message.args || []
     })
     .then(results => {
       sendResponse({ success: true, results });
@@ -219,7 +318,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   
-  if (request.action === "captureScreen") {
+  if (message.action === "captureScreen") {
     // Capture the visible tab
     chrome.tabs.captureVisibleTab(
       sender.tab.windowId,
@@ -240,12 +339,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   
-  if (request.action === "renderScratchblocks") {
+  if (message.action === "renderScratchblocks") {
     // Execute the rendering function in the tab that sent the message
     chrome.scripting.executeScript({
       target: { tabId: sender.tab.id },
       func: renderScratchblocksInPage,
-      args: [request.blockData]
+      args: [message.blockData]
     })
     .then(results => {
       sendResponse(results[0].result);
@@ -259,12 +358,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   
-  if (request.action === "loadScratchblocksLibraries") {
+  if (message.action === "loadScratchblocksLibraries") {
     // Execute the loading function in the tab that sent the message
     chrome.scripting.executeScript({
       target: { tabId: sender.tab.id },
       func: loadScratchblocksLibraries,
-      args: [request.urls]
+      args: [message.urls]
     })
     .then(results => {
       sendResponse(results[0].result);
@@ -278,24 +377,80 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   
-  if (request.action === "sendQuestion") {
-    // Send the question to the backend API
-    sendQuestionToBackend(request.data)
-      .then(result => {
+  if (message.action === "sendQuestionToAPI") {
+    // Handle the request to send a question to the backend API
+    (async () => {
+      try {
+        // Send the request to the backend
+        const streamSource = await sendQuestionToBackend(message.data);
+        
+        // Get the tab ID where the content script is running
+        const tabId = sender.tab.id;
+        
+        // Send "streaming started" message to content script
+        chrome.tabs.sendMessage(tabId, { action: "streamStart" });
+        
+        // Process the stream
+        await streamSource.processStream((data) => {
+          if (data.error) {
+            // Send error message to the content script
+            chrome.tabs.sendMessage(tabId, { 
+              action: "streamError", 
+              error: data.error 
+            });
+          } else if (data.done) {
+            // Stream is complete, send full response
+            const { fullResponse, projectToken } = data;
+            
+            // Send complete message to the content script
+            chrome.tabs.sendMessage(tabId, { 
+              action: "streamComplete", 
+              fullResponse,
+              projectToken
+            });
+          } else {
+            // Send chunk to the content script
+            chrome.tabs.sendMessage(tabId, { 
+              action: "streamChunk", 
+              chunk: data.chunk 
+            });
+          }
+        });
+      } catch (error) {
+        console.error("Error in streaming:", error);
+        
+        // Send error to the content script
+        chrome.tabs.sendMessage(sender.tab.id, { 
+          action: "streamError", 
+          error: error.message || "Error communicating with the server. Please try again."
+        });
+      }
+    })();
+    
+    // Send an immediate response to acknowledge receipt
+    sendResponse({ received: true });
+    return true; // Required for async sendResponse
+  }
+  
+  if (message.action === "generateTTS") {
+    // Send the text for TTS conversion
+    (async () => {
+      try {
+        const result = await sendTextToTTS(message.text);
         sendResponse(result);
-      })
-      .catch(error => {
-        console.error("Error in sendQuestion handler:", error);
-        sendResponse({ error: error.message });
-      });
+      } catch (error) {
+        console.error("Error in generateTTS handler:", error);
+        sendResponse({ error: error.message || "Error generating speech. Please try again." });
+      }
+    })();
     
     // Return true to indicate we'll send a response asynchronously
     return true;
   }
   
-  if (request.action === "transcribeAudio") {
+  if (message.action === "transcribeAudio") {
     // Send the audio data for transcription
-    transcribeAudioToBackend(request.data)
+    transcribeAudioToBackend(message.data)
       .then(result => {
         sendResponse(result);
       })

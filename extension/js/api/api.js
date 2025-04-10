@@ -9,11 +9,22 @@ window.BlockBuddy.API = window.BlockBuddy.API || {};
  * @param {string} question - The question to send
  * @param {string} projectId - The project ID
  * @param {Function} onThinking - Callback for thinking state
- * @param {Function} onResponse - Callback for response
+ * @param {Function} onStreamStart - Callback for when streaming starts
+ * @param {Function} onStreamChunk - Callback for each streamed chunk
+ * @param {Function} onStreamComplete - Callback for when streaming completes
  * @param {Function} onError - Callback for error
  * @param {string|null} screenshotData - Optional base64 screenshot data
  */
-window.BlockBuddy.API.sendQuestionToAPI = function(question, projectId, onThinking, onResponse, onError, screenshotData) {
+window.BlockBuddy.API.sendQuestionToAPI = function(
+  question, 
+  projectId, 
+  onThinking, 
+  onStreamStart, 
+  onStreamChunk, 
+  onStreamComplete, 
+  onError, 
+  screenshotData
+) {
   // Start thinking indicator
   onThinking();
   
@@ -55,37 +66,89 @@ window.BlockBuddy.API.sendQuestionToAPI = function(question, projectId, onThinki
 
   console.log("Sending request to background script:", requestData);
 
+  // Set up listeners for streaming response
+  const setupStreamListeners = () => {
+    // Listen for stream chunks
+    chrome.runtime.onMessage.addListener(function streamListener(message) {
+      if (message.action === "streamStart") {
+        // Called when streaming starts
+        onStreamStart();
+        return;
+      }
+      
+      if (message.action === "streamChunk") {
+        // Process stream chunk
+        onStreamChunk(message.chunk);
+        return;
+      }
+      
+      if (message.action === "streamComplete") {
+        // Process stream completion
+        chrome.runtime.onMessage.removeListener(streamListener);
+        onStreamComplete(message.fullResponse, message.projectToken);
+        
+        // Store the project token
+        if (message.projectToken) {
+          window.BlockBuddy.Storage.setProjectToken(projectId, message.projectToken);
+        }
+        
+        // Add the assistant response to chat history
+        window.BlockBuddy.Storage.addMessageToHistory(projectId, message.fullResponse, "assistant");
+        return;
+      }
+      
+      if (message.action === "streamError") {
+        // Handle error
+        chrome.runtime.onMessage.removeListener(streamListener);
+        onError(message.error);
+        return;
+      }
+    });
+  };
+
+  // Send message to background script to start the API request
+  setupStreamListeners();
+  
+  // Send the request to the background script
+  chrome.runtime.sendMessage({
+    action: "sendQuestionToAPI",
+    data: requestData
+  });
+};
+
+/**
+ * Generate text-to-speech audio for a text response
+ * @param {string} text - The text to convert to speech
+ * @param {Function} onSuccess - Callback for success
+ * @param {Function} onError - Callback for error
+ */
+window.BlockBuddy.API.generateTTS = function(text, onSuccess, onError) {
+  console.log("Generating TTS for text:", text.substring(0, 100) + (text.length > 100 ? "..." : ""));
+  
+  // Clean up the text by removing scratchblocks code
+  const cleanedText = text.replace(/```scratchblocks[\s\S]*?```/g, "");
   
   // Send the request to the background script
   chrome.runtime.sendMessage(
     {
-      action: "sendQuestion",
-      data: requestData
+      action: "generateTTS",
+      text: cleanedText
     },
     (response) => {
       if (chrome.runtime.lastError) {
-        console.error("Error sending message:", chrome.runtime.lastError);
-        onError("Error communicating with the server. Please try again.");
+        console.error("Error sending TTS message:", chrome.runtime.lastError);
+        onError("Error generating speech. Please try again.");
         return;
       }
       
       if (response.error) {
-        console.error("API error:", response.error);
-        onError(response.error || "Error communicating with the server. Please try again.");
+        console.error("TTS API error:", response.error);
+        onError(response.error || "Error generating speech. Please try again.");
         return;
       }
       
-      // Save the token if provided
-      if (response.projectToken) {
-        window.BlockBuddy.Storage.setProjectToken(projectId, response.projectToken);
-      }
-      
-      // Process the response - now passing audio data if available
-      onResponse(
-        response.answer || "Sorry, I couldn't get an answer. Please try again.", 
-        response.audio || null,
-        response.audioFormat || 'mp3'
-      );
+      // Process the response
+      onSuccess(response.audio, response.audioFormat || 'mp3');
     }
   );
 };

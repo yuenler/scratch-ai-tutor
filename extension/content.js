@@ -203,28 +203,109 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   
   // Helper function to send the question with or without screenshot data
   function sendQuestionWithData(question, projectId, thinkingIndicator, screenshotData) {
-    // Send question to API
+    // Create a variable to hold the message element
+    let messageContent = null;
+    let messageElement = null;
+    let fullResponse = '';
+    let hasScratchblocks = false;
+    
+    // Send question to API with streaming handlers
     window.BlockBuddy.API.sendQuestionToAPI(
       question,
       projectId,
       () => {}, // onThinking - already handled above
-      (answer, audioData, audioFormat) => {
+      () => {
+        // Called when streaming starts - create empty message
         // Remove thinking indicator
         thinkingIndicator.remove();
         
-        // Add assistant message with audio if available
-        window.BlockBuddy.UI.addMessage(
-          chatBodyEl, 
-          shadow, 
-          answer, 
-          "assistant", 
-          audioData, 
-          audioFormat,
-          true // Always render scratchblocks immediately for new messages
-        );
+        // Create an empty message container
+        messageElement = document.createElement("div");
+        messageElement.className = `message assistant-message`;
+        messageElement.style.opacity = "0";
+        messageElement.style.transform = "translateY(20px)";
         
-        // Add assistant response to chat history
-        window.BlockBuddy.Storage.addMessageToHistory(projectId, answer, "assistant");
+        const messageHeader = document.createElement("div");
+        messageHeader.className = "message-header";
+        
+        const messageIcon = document.createElement("div");
+        messageIcon.className = "message-icon";
+        messageIcon.textContent = "🧩";
+        
+        const messageTitle = document.createElement("div");
+        messageTitle.className = "message-title";
+        messageTitle.textContent = "BlockBuddy";
+        
+        messageHeader.appendChild(messageIcon);
+        messageHeader.appendChild(messageTitle);
+        
+        messageContent = document.createElement("div");
+        messageContent.className = "message-content";
+        
+        messageElement.appendChild(messageHeader);
+        messageElement.appendChild(messageContent);
+        
+        chatBodyEl.appendChild(messageElement);
+        
+        // Animate the message in
+        setTimeout(() => {
+          messageElement.style.opacity = "1";
+          messageElement.style.transform = "translateY(0)";
+          messageElement.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+        }, 10);
+        
+        // Scroll to bottom
+        chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+      },
+      (chunk) => {
+        // Called for each streaming chunk
+        if (!messageContent) return;
+        
+        // Append the chunk to the full response
+        fullResponse += chunk;
+        
+        // Check if content might contain scratchblocks
+        if (!hasScratchblocks && chunk.includes("```scratchblocks")) {
+          hasScratchblocks = true;
+        }
+        
+        // Update the message content with markdown parsing
+        messageContent.innerHTML = window.BlockBuddy.Markdown.parseMarkdown(fullResponse);
+        
+        // Scroll to bottom to follow the streaming content
+        chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+      },
+      (completeResponse, projectToken) => {
+        // Called when streaming is complete
+        if (!messageContent || !messageElement) return;
+        
+        fullResponse = completeResponse;
+        
+        // Update with the final complete response
+        messageContent.innerHTML = window.BlockBuddy.Markdown.parseMarkdown(fullResponse);
+        
+        console.log("Stream complete, waiting to render scratchblocks and generate TTS...");
+        
+        // Use setTimeout to ensure the DOM has updated before rendering scratchblocks
+        setTimeout(() => {
+          // If there are scratchblocks, render them now
+          if (hasScratchblocks || fullResponse.includes("```scratchblocks")) {
+            console.log("Rendering scratchblocks now that streaming is complete");
+            window.BlockBuddy.ScratchBlocks.renderScratchblocks(shadow, messageContent);
+          }
+          
+          // Generate TTS for the response if autoplay is enabled
+          const autoplayEnabled = window.BlockBuddy.Storage.getAutoplayPreference();
+          if (autoplayEnabled) {
+            generateTTSForResponse(fullResponse, messageElement, true);
+          } else {
+            // Add TTS button even if autoplay is disabled
+            generateTTSForResponse(fullResponse, messageElement, false);
+          }
+          
+          // Scroll to bottom one final time
+          chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+        }, 500); // Small delay to ensure DOM updates before processing
       },
       (error) => {
         // Remove thinking indicator
@@ -232,12 +313,49 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         // Add error message
         console.error("Error sending question to API:", error);
         if (error.includes("Failed to get token")) {
-          window.BlockBuddy.UI.addMessage(chatBodyEl, shadow, `I can't access your project. Please check if your project is set to "Share" so it's publicly viewable.`, "assistant");
+          window.BlockBuddy.UI.addMessage(
+            chatBodyEl, 
+            shadow, 
+            `I can't access your project. Please check if your project is set to "Share" so it's publicly viewable.`, 
+            "assistant"
+          );
         } else {
-          window.BlockBuddy.UI.addMessage(chatBodyEl, shadow, `Oops! Something didn't work right. Maybe try asking me again?`, "assistant");
+          window.BlockBuddy.UI.addMessage(
+            chatBodyEl, 
+            shadow, 
+            `Oops! Something didn't work right. Maybe try asking me again?`, 
+            "assistant"
+          );
         }
       },
       screenshotData // Pass the screenshot data
+    );
+  }
+  
+  // Function to generate TTS for a response
+  function generateTTSForResponse(text, messageElement, autoplay = true) {
+    console.log("Generating TTS for text:", text.substring(0, 100) + "...");
+    
+    // Remove scratchblocks code from TTS input to avoid reading code blocks
+    const cleanedText = text.replace(/```scratchblocks[\s\S]*?```/g, "A code block has been provided. ");
+    
+    // Generate TTS
+    window.BlockBuddy.API.generateTTS(
+      cleanedText,
+      (audioData, audioFormat) => {
+        console.log("TTS generated successfully");
+        if (messageElement) {
+          const audioPlayer = window.BlockBuddy.UI.createAudioPlayer(
+            audioData, 
+            audioFormat, 
+            autoplay // Allow autoplay based on user preference
+          );
+          messageElement.appendChild(audioPlayer.container);
+        }
+      },
+      (error) => {
+        console.error("Error generating TTS:", error);
+      }
     );
   }
 
