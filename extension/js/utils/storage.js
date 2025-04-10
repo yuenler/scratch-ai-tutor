@@ -14,6 +14,7 @@ const PANEL_POSITION_KEY = STORAGE_PREFIX + 'panelPosition';
 const MINIMIZED_BUTTON_POSITION_KEY = STORAGE_PREFIX + 'minimizedButtonPosition';
 const UI_STATE_KEY = STORAGE_PREFIX + 'uiState';
 const SCREENSHOT_ENABLED_KEY = STORAGE_PREFIX + 'screenshotEnabled';
+const GENERATE_AUDIO_KEY = STORAGE_PREFIX + 'generateAudio';
 
 // Store project tokens for reuse
 let projectTokens = {};
@@ -169,6 +170,17 @@ window.BlockBuddy.Storage.getAutoplayPreference = function() {
 
 window.BlockBuddy.Storage.setAutoplayPreference = function(value) {
   localStorage.setItem(AUTOPLAY_KEY, JSON.stringify(value));
+};
+
+/**
+ * Add storage functions for audio generation preference
+ */
+window.BlockBuddy.Storage.getGenerateAudioPreference = function() {
+  return JSON.parse(localStorage.getItem(GENERATE_AUDIO_KEY) || 'true');
+};
+
+window.BlockBuddy.Storage.setGenerateAudioPreference = function(value) {
+  localStorage.setItem(GENERATE_AUDIO_KEY, JSON.stringify(value));
 };
 
 /**

@@ -1103,7 +1103,7 @@ window.BlockBuddy.UI.createUI = function() {
   
   // Create the label for the model toggle
   const modelToggleLabel = document.createElement('span');
-  modelToggleLabel.textContent = 'Thinking Mode (better, but slower responses)';
+  modelToggleLabel.textContent = 'Thinking Mode';
   modelToggleLabel.style.fontSize = '12px';
   modelToggleLabel.style.color = '#575e75';
   modelToggleLabel.style.userSelect = 'none';
@@ -1343,6 +1343,86 @@ modelToggleInput.addEventListener('change', function() {
   
   // Add the screenshot toggle to the outer container
   modelToggleOuterContainer.appendChild(screenshotToggleContainer);
+
+  // Create audio generation toggle container
+  const audioGenerationToggleContainer = document.createElement('div');
+  audioGenerationToggleContainer.style.display = 'flex';
+  audioGenerationToggleContainer.style.alignItems = 'center';
+  audioGenerationToggleContainer.style.gap = '6px';
+  
+  // Create audio generation toggle switch
+  const audioGenerationToggleSwitch = document.createElement('label');
+  audioGenerationToggleSwitch.style.position = 'relative';
+  audioGenerationToggleSwitch.style.display = 'inline-block';
+  audioGenerationToggleSwitch.style.width = '34px';
+  audioGenerationToggleSwitch.style.height = '18px';
+  audioGenerationToggleSwitch.style.margin = '0';
+  
+  // Create input for toggle
+  const audioGenerationToggleInput = document.createElement('input');
+  audioGenerationToggleInput.id = 'audioGenerationToggleInput';
+  audioGenerationToggleInput.type = 'checkbox';
+  audioGenerationToggleInput.style.opacity = '0';
+  audioGenerationToggleInput.style.width = '0';
+  audioGenerationToggleInput.style.height = '0';
+  
+  // Check local storage for preference and set initial state
+  audioGenerationToggleInput.checked = window.BlockBuddy.Storage.getGenerateAudioPreference();
+  
+  // Create slider
+  const audioGenerationToggleSlider = document.createElement('span');
+  audioGenerationToggleSlider.style.position = 'absolute';
+  audioGenerationToggleSlider.style.cursor = 'pointer';
+  audioGenerationToggleSlider.style.top = '0';
+  audioGenerationToggleSlider.style.left = '0';
+  audioGenerationToggleSlider.style.right = '0';
+  audioGenerationToggleSlider.style.bottom = '0';
+  audioGenerationToggleSlider.style.transition = '0.4s';
+  audioGenerationToggleSlider.style.borderRadius = '34px';
+  audioGenerationToggleSlider.style.backgroundColor = audioGenerationToggleInput.checked ? '#4c97ff' : '#ccc';
+  
+  // Create circle inside toggle
+  const audioGenerationToggleCircle = document.createElement('span');
+  audioGenerationToggleCircle.style.position = 'absolute';
+  audioGenerationToggleCircle.style.content = '""';
+  audioGenerationToggleCircle.style.height = '14px';
+  audioGenerationToggleCircle.style.width = '14px';
+  audioGenerationToggleCircle.style.left = '2px';
+  audioGenerationToggleCircle.style.bottom = '2px';
+  audioGenerationToggleCircle.style.backgroundColor = 'white';
+  audioGenerationToggleCircle.style.transition = '0.4s';
+  audioGenerationToggleCircle.style.borderRadius = '50%';
+  audioGenerationToggleCircle.style.transform = audioGenerationToggleInput.checked ? 'translateX(16px)' : 'none';
+  
+  audioGenerationToggleSlider.appendChild(audioGenerationToggleCircle);
+  audioGenerationToggleSwitch.appendChild(audioGenerationToggleInput);
+  audioGenerationToggleSwitch.appendChild(audioGenerationToggleSlider);
+  
+  // Create the label for the audio generation toggle
+  const audioGenerationToggleLabel = document.createElement('span');
+  audioGenerationToggleLabel.textContent = 'Generate Audio';
+  audioGenerationToggleLabel.style.fontSize = '12px';
+  audioGenerationToggleLabel.style.color = '#575e75';
+  audioGenerationToggleLabel.style.userSelect = 'none';
+  
+  audioGenerationToggleContainer.appendChild(audioGenerationToggleSwitch);
+  audioGenerationToggleContainer.appendChild(audioGenerationToggleLabel);
+  
+  // Add event listener to save preference
+  audioGenerationToggleInput.addEventListener('change', function() {
+    const isChecked = this.checked;
+    
+    // Update the toggle appearance
+    audioGenerationToggleSlider.style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
+    audioGenerationToggleCircle.style.transform = isChecked ? 'translateX(16px)' : 'none';
+    
+    // Save the preference
+    window.BlockBuddy.Storage.setGenerateAudioPreference(isChecked);
+    console.log(`Audio generation preference changed to: ${isChecked ? 'enabled' : 'disabled'}`);
+  });
+  
+  // Add the audio generation toggle to the outer container
+  modelToggleOuterContainer.appendChild(audioGenerationToggleContainer);
 
   // Check if thinking mode is enabled and update screenshot toggle state accordingly
   if (modelToggleInput.checked) {

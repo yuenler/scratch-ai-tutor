@@ -356,6 +356,15 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   
   // Function to generate TTS for a response
   function generateTTSForResponse(text, messageElement, autoplay = true) {
+    // Check if audio generation is enabled in user preferences
+    const generateAudio = window.BlockBuddy.Storage.getGenerateAudioPreference();
+    
+    // If audio generation is disabled, simply return without doing anything
+    if (!generateAudio) {
+      console.log("Audio generation is disabled by user preference. Skipping TTS generation.");
+      return;
+    }
+    
     console.log("Generating TTS for text:", text.substring(0, 100) + "...");
     
     // Remove scratchblocks code from TTS input to avoid reading code blocks
