@@ -203,25 +203,27 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   
   // Helper function to send the question with or without screenshot data
   function sendQuestionWithData(question, projectId, thinkingIndicator, screenshotData) {
-    // Create a variable to hold the message element
-    let messageContent = null;
     let messageElement = null;
+    let messageContent = null;
     let fullResponse = '';
     let hasScratchblocks = false;
     
-    // Send question to API with streaming handlers
     window.BlockBuddy.API.sendQuestionToAPI(
       question,
       projectId,
-      () => {}, // onThinking - already handled above
       () => {
-        // Called when streaming starts - create empty message
-        // Remove thinking indicator
-        thinkingIndicator.remove();
+        // Called when in thinking state (this is not triggered while streaming)
+        console.log("AI is thinking...");
+      },
+      () => {
+        // Called when streaming starts
+        console.log("Stream started");
         
-        // Create an empty message container
+        // Create an empty message container but don't display it yet
         messageElement = document.createElement("div");
         messageElement.className = `message assistant-message`;
+        // Hide it completely until we have content
+        messageElement.style.display = "none"; 
         messageElement.style.opacity = "0";
         messageElement.style.transform = "translateY(20px)";
         
@@ -247,15 +249,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         
         chatBodyEl.appendChild(messageElement);
         
-        // Animate the message in
-        setTimeout(() => {
-          messageElement.style.opacity = "1";
-          messageElement.style.transform = "translateY(0)";
-          messageElement.style.transition = "opacity 0.4s ease, transform 0.4s ease";
-        }, 10);
-        
-        // Scroll to bottom
-        chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+        // Don't animate the message in yet - we'll do that when we have content
       },
       (chunk) => {
         // Called for each streaming chunk
@@ -263,6 +257,34 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         
         // Append the chunk to the full response
         fullResponse += chunk;
+        
+        // Check if full response so far is empty or only whitespace/newlines
+        const isEmpty = fullResponse.trim() === '';
+        
+        // Keep thinking indicator if message is still effectively empty
+        if (isEmpty) {
+          console.log("Message still empty, keeping thinking indicator visible");
+          // Don't update UI yet, keep thinking indicator
+          return;
+        }
+        
+        // Only when we have actual content: remove thinking indicator and show message
+        if (thinkingIndicator && !isEmpty) {
+          console.log("Removing thinking indicator now that we have content");
+          thinkingIndicator.remove();
+          thinkingIndicator = null; // Prevent multiple removals
+          
+          // Now show and animate the message
+          messageElement.style.display = ""; // Restore display
+          setTimeout(() => {
+            messageElement.style.opacity = "1";
+            messageElement.style.transform = "translateY(0)";
+            messageElement.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+          }, 10);
+          
+          // Scroll to bottom when showing the message
+          chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+        }
         
         // Check if content might contain scratchblocks
         if (!hasScratchblocks && chunk.includes("```scratchblocks")) {
