@@ -498,17 +498,17 @@ function blockString(targetScripts) {
     // Add a header for each target with its type and name
     output += `=== ${target.type}: ${target.name} ===\n\n`;
     
-    // Start scratchblocks code block
-    output += "```scratchblocks\n";
-    
-    // Add all scripts for this target
+    // Add all scripts for this target, each in its own scratchblocks code block
     for (const script of target.scripts) {
+      // Start scratchblocks code block
+      output += "```scratchblocks\n";
+      
+      // Add the script
       output += indentString(script, 0);
-      output += "\n";
+      
+      // End scratchblocks code block
+      output += "```\n\n";
     }
-    
-    // End scratchblocks code block
-    output += "```\n\n";
   }
   return output;
 }
