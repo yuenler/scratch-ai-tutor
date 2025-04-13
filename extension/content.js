@@ -287,7 +287,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         }
         
         // Check if content might contain scratchblocks
-        if (!hasScratchblocks && chunk.includes("```scratchblocks")) {
+        if (!hasScratchblocks && chunk && chunk.includes("```scratchblocks")) {
           hasScratchblocks = true;
         }
         
