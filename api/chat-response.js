@@ -48,10 +48,10 @@ export default async function handler(req, res) {
         const errorMessage = "I can't access your Scratch project. Please make sure it's shared. In Scratch, click the 'Share' button at the top of your project page, then try asking your question again.";
         
         try {
-          // First send streamStart - this initializes the response handling in the client
-          res.write(`data: ${JSON.stringify({ 
-            action: "streamStart"
-          })}\n\n`);
+          // // First send streamStart - this initializes the response handling in the client
+          // res.write(`data: ${JSON.stringify({ 
+          //   action: "streamStart"
+          // })}\n\n`);
           
           // Then immediately send a complete chunk and finish the stream
           // This avoids the race condition that can cause undefined values
