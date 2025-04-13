@@ -47,26 +47,31 @@ export default async function handler(req, res) {
         // Create a user-friendly message
         const errorMessage = "I can't access your Scratch project. Please make sure it's shared. In Scratch, click the 'Share' button at the top of your project page, then try asking your question again.";
         
-        // Mimic the streaming protocol that the client expects
-        // First send streamStart
+        // The format must exactly match what the client expects to handle correctly
+        
+        // First send streamStart - this initializes the response handling in the client
         res.write(`data: ${JSON.stringify({ 
           action: "streamStart"
         })}\n\n`);
         
-        // Then send a single chunk with the error message
-        res.write(`data: ${JSON.stringify({ 
-          action: "streamChunk",
-          chunk: errorMessage
-        })}\n\n`);
+        // Wait a brief moment to ensure proper sequencing
+        setTimeout(() => {
+          // Then send a chunk with the full error message
+          res.write(`data: ${JSON.stringify({ 
+            action: "streamChunk",
+            chunk: errorMessage
+          })}\n\n`);
+          
+          // Finally send streamComplete with the full message for history
+          res.write(`data: ${JSON.stringify({ 
+            action: "streamComplete",
+            fullResponse: errorMessage,
+            projectToken: null
+          })}\n\n`);
+          
+          res.end();
+        }, 50);
         
-        // Finally send streamComplete
-        res.write(`data: ${JSON.stringify({ 
-          action: "streamComplete",
-          fullResponse: errorMessage,
-          projectToken: null
-        })}\n\n`);
-        
-        res.end();
         return;
       }
       
