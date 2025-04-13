@@ -289,6 +289,13 @@ async function getProjectFromUrl(url, providedToken = null) {
       });
       const details = await res1.json();
 
+      // Check if project is not shared
+      if (details.code === 'NotFound' && details.message === '') {
+        console.log(`Project ${projectId} is not shared`);
+        console.log(details);
+        return { project: null, token: null, error: "Project is not shared. The user needs to share their Scratch project to use this feature." };
+      }
+
       token = details.project_token;
       
       if (!token) {

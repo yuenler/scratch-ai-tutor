@@ -32,6 +32,30 @@ export default async function handler(req, res) {
     let result;
     try {
       result = await convertScratchURLToBlocks(url, projectToken);
+      
+      // Check if the project is not shared and immediately return response
+      if (result.error && result.error.includes("Project is not shared")) {
+        console.log("Project is not shared, sending immediate response");
+        
+        // Set up streaming response headers
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        });
+        
+        // Send error message as a complete response
+        res.write(`data: ${JSON.stringify({ 
+          chunk: "I can't access your Scratch project. Please make sure it's shared. In Scratch, click the 'Share' button at the top of your project page, then try asking your question again.",
+          done: true,
+          fullResponse: "I can't access your Scratch project. Please make sure it's shared. In Scratch, click the 'Share' button at the top of your project page, then try asking your question again.",
+          projectToken: null
+        })}\n\n`);
+        
+        res.end();
+        return;
+      }
+      
       if (!result.blocksText) {
         console.error("Failed to convert project to blocks");
       }
