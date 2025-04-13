@@ -47,22 +47,20 @@ export default async function handler(req, res) {
         // Create a user-friendly message
         const errorMessage = "I can't access your Scratch project. Please make sure it's shared. In Scratch, click the 'Share' button at the top of your project page, then try asking your question again.";
         
-        // The format must exactly match what the client expects to handle correctly
-        
-        // First send streamStart - this initializes the response handling in the client
-        res.write(`data: ${JSON.stringify({ 
-          action: "streamStart"
-        })}\n\n`);
-        
-        // Wait a brief moment to ensure proper sequencing
-        setTimeout(() => {
-          // Then send a chunk with the full error message
+        try {
+          // First send streamStart - this initializes the response handling in the client
           res.write(`data: ${JSON.stringify({ 
-            action: "streamChunk",
-            chunk: errorMessage
+            action: "streamStart"
           })}\n\n`);
           
-          // Finally send streamComplete with the full message for history
+          // Then immediately send a complete chunk and finish the stream
+          // This avoids the race condition that can cause undefined values
+          res.write(`data: ${JSON.stringify({ 
+            action: "streamChunk",
+            chunk: errorMessage  // Ensure the chunk property is defined
+          })}\n\n`);
+          
+          // Ensure complete record in history
           res.write(`data: ${JSON.stringify({ 
             action: "streamComplete",
             fullResponse: errorMessage,
@@ -70,7 +68,14 @@ export default async function handler(req, res) {
           })}\n\n`);
           
           res.end();
-        }, 50);
+        } catch (error) {
+          console.error("Error sending streaming response:", error);
+          // Fall back to standard error handling
+          if (!res.headersSent) {
+            return res.status(500).json({ error: "Error processing request" });
+          }
+          res.end();
+        }
         
         return;
       }
