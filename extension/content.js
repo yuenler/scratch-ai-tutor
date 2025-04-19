@@ -316,14 +316,15 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
             window.BlockBuddy.ScratchBlocks.renderScratchblocks(shadow, messageContent);
           }
           
+          // Generate a message ID for this assistant message
+          const messageId = window.BlockBuddy.Storage.generateMessageId();
+          
+          // Store the message in chat history with the message ID
+          window.BlockBuddy.Storage.addMessageToHistory(projectId, fullResponse, "assistant", messageId);
+          
           // Generate TTS for the response if autoplay is enabled
           const autoplayEnabled = window.BlockBuddy.Storage.getAutoplayPreference();
-          if (autoplayEnabled) {
-            generateTTSForResponse(fullResponse, messageElement, true);
-          } else {
-            // Add TTS button even if autoplay is disabled
-            generateTTSForResponse(fullResponse, messageElement, false);
-          }
+          generateTTSForResponse(fullResponse, messageElement, messageId, autoplayEnabled);
           
           // Scroll to bottom one final time
           chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
@@ -355,8 +356,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
   }
   
   // Function to generate TTS for a response
-  function generateTTSForResponse(text, messageElement, autoplay = true) {
-    // Check if audio generation is enabled in user preferences
+  function generateTTSForResponse(text, messageElement, messageId, autoplay = true) {
     const generateAudio = window.BlockBuddy.Storage.getGenerateAudioPreference();
     
     // If audio generation is disabled, simply return without doing anything
@@ -404,6 +404,29 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     loadingIndicator.prepend(spinner);
     messageElement.appendChild(loadingIndicator);
     
+    // Check if we already have audio for this message
+    const projectId = window.location.href.match(/\/projects\/(\d+)/)?.[1];
+    const existingAudio = messageId ? window.BlockBuddy.Storage.getMessageAudio(messageId) : null;
+    
+    if (existingAudio && existingAudio.audioData) {
+      console.log("Found existing audio for message, using from localStorage");
+      
+      // Remove loading indicator
+      if (loadingIndicator && loadingIndicator.parentNode) {
+        loadingIndicator.parentNode.removeChild(loadingIndicator);
+      }
+      
+      if (messageElement) {
+        const audioPlayer = window.BlockBuddy.UI.createAudioPlayer(
+          existingAudio.audioData, 
+          existingAudio.audioFormat, 
+          autoplay
+        );
+        messageElement.appendChild(audioPlayer.container);
+      }
+      return;
+    }
+    
     // Generate TTS
     window.BlockBuddy.API.generateTTS(
       cleanedText,
@@ -422,6 +445,16 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
             autoplay
           );
           messageElement.appendChild(audioPlayer.container);
+          
+          // Save audio data to localStorage if we have a message ID
+          if (messageId) {
+            window.BlockBuddy.Storage.saveMessageAudio(messageId, {
+              audioData: audioData,
+              audioFormat: audioFormat,
+              timestamp: Date.now(),
+              projectId: projectId || 'unknown'
+            });
+          }
         }
       },
       (error) => {
@@ -613,10 +646,16 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       // Clear the chat history in storage
       window.BlockBuddy.Storage.clearChatHistory(currentProjectId);
       
+      // Clear all audio data for this project
+      const allProjectAudio = window.BlockBuddy.Storage.getAllMessageAudio(currentProjectId);
+      for (const messageId in allProjectAudio) {
+        window.BlockBuddy.Storage.removeMessageAudio(messageId);
+      }
+      
       // Clear the chat UI
       chatBodyEl.innerHTML = '';
       
-      console.log("Chat history cleared for project ID:", currentProjectId);
+      console.log("Chat history and audio data cleared for project ID:", currentProjectId);
     }
   });
 
@@ -641,15 +680,22 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         const messageContainers = [];
         
         // Display previous messages in the UI
-        previousChat.forEach(msg => {
+        previousChat.forEach((msg, index) => {
+          // Generate a consistent messageId based on content and timestamp if available
+          const messageId = msg.messageId || 
+                           (msg.role === 'assistant' ? 
+                            `history_${currentProjectId}_${index}_${msg.timestamp || Date.now()}` : 
+                            null);
+                            
           // Create the message in the UI but don't render scratchblocks yet
           const messageContent = window.BlockBuddy.UI.addMessage(
             chatBodyEl, 
             shadow, 
             msg.content, 
             msg.role,
-            null,  // No audio data for history messages
-            null,  // No audio format for history messages
+            null,  // No audio data - will be retrieved from storage via messageId if available
+            null,  // No audio format - will be retrieved from storage via messageId if available
+            messageId,  // Pass messageId to allow audio lookup
             false  // Don't render scratchblocks yet for history messages
           );
           

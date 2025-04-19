@@ -92,8 +92,6 @@ window.BlockBuddy.API.sendQuestionToAPI = function(
           window.BlockBuddy.Storage.setProjectToken(projectId, message.projectToken);
         }
         
-        // Add the assistant response to chat history
-        window.BlockBuddy.Storage.addMessageToHistory(projectId, message.fullResponse, "assistant");
         return;
       }
       

@@ -15,10 +15,12 @@ const MINIMIZED_BUTTON_POSITION_KEY = STORAGE_PREFIX + 'minimizedButtonPosition'
 const UI_STATE_KEY = STORAGE_PREFIX + 'uiState';
 const SCREENSHOT_ENABLED_KEY = STORAGE_PREFIX + 'screenshotEnabled';
 const GENERATE_AUDIO_KEY = STORAGE_PREFIX + 'generateAudio';
+const MESSAGE_AUDIO_KEY = STORAGE_PREFIX + 'messageAudio';
 
 // Store project tokens for reuse
 let projectTokens = {};
 let chatHistory = {};
+let messageAudio = {};
 
 /**
  * Load saved tokens from storage
@@ -27,37 +29,116 @@ let chatHistory = {};
 window.BlockBuddy.Storage.loadProjectTokens = function() {
   return new Promise((resolve) => {
     try {
-      const storedTokens = localStorage.getItem(PROJECT_TOKENS_KEY);
+      // Load simple preferences from localStorage (these are small and don't need chrome.storage)
+      const autoplayPref = localStorage.getItem(AUTOPLAY_KEY);
+      const modelPref = localStorage.getItem(MODEL_PREFERENCE_KEY);
+      const uiState = localStorage.getItem(UI_STATE_KEY);
+      const panelPosition = localStorage.getItem(PANEL_POSITION_KEY);
+      const minimizedButtonPosition = localStorage.getItem(MINIMIZED_BUTTON_POSITION_KEY);
+      const screenshotEnabled = localStorage.getItem(SCREENSHOT_ENABLED_KEY);
+      const generateAudio = localStorage.getItem(GENERATE_AUDIO_KEY);
       
-      if (storedTokens) {
-        try {
-          projectTokens = JSON.parse(storedTokens);
-          console.log('Loaded project tokens from localStorage:', Object.keys(projectTokens).length);
-        } catch (e) {
-          console.error('Error parsing stored tokens:', e);
-          projectTokens = {};
+      // Save these to localStorage backup in case we need them
+      if (autoplayPref) localStorage.setItem(AUTOPLAY_KEY, autoplayPref);
+      if (modelPref) localStorage.setItem(MODEL_PREFERENCE_KEY, modelPref);
+      if (uiState) localStorage.setItem(UI_STATE_KEY, uiState);
+      if (panelPosition) localStorage.setItem(PANEL_POSITION_KEY, panelPosition);
+      if (minimizedButtonPosition) localStorage.setItem(MINIMIZED_BUTTON_POSITION_KEY, minimizedButtonPosition);
+      if (screenshotEnabled) localStorage.setItem(SCREENSHOT_ENABLED_KEY, screenshotEnabled);
+      if (generateAudio) localStorage.setItem(GENERATE_AUDIO_KEY, generateAudio);
+      
+      // Use chrome.storage.local for potentially larger data
+      chrome.storage.local.get([
+        PROJECT_TOKENS_KEY, 
+        CHAT_HISTORY_KEY, 
+        MESSAGE_AUDIO_KEY
+      ], (result) => {
+        // Load project tokens
+        if (result[PROJECT_TOKENS_KEY]) {
+          try {
+            projectTokens = result[PROJECT_TOKENS_KEY];
+            console.log('Loaded project tokens from chrome.storage:', Object.keys(projectTokens).length);
+          } catch (e) {
+            console.error('Error processing project tokens:', e);
+            projectTokens = {};
+          }
+        } else {
+          // Try to get from localStorage as fallback for migration
+          const storedTokens = localStorage.getItem(PROJECT_TOKENS_KEY);
+          if (storedTokens) {
+            try {
+              projectTokens = JSON.parse(storedTokens);
+              console.log('Migrating project tokens from localStorage:', Object.keys(projectTokens).length);
+              // Save to chrome.storage for future
+              chrome.storage.local.set({ [PROJECT_TOKENS_KEY]: projectTokens });
+            } catch (e) {
+              console.error('Error parsing stored tokens from localStorage:', e);
+              projectTokens = {};
+            }
+          } else {
+            console.log('No saved project tokens found');
+          }
         }
-      } else {
-        console.log('No saved project tokens found in localStorage');
-      }
 
-      // Also load chat history
-      const storedChatHistory = localStorage.getItem(CHAT_HISTORY_KEY);
-      if (storedChatHistory) {
-        try {
-          chatHistory = JSON.parse(storedChatHistory);
-          console.log('Loaded chat history from localStorage:', Object.keys(chatHistory).length);
-        } catch (e) {
-          console.error('Error parsing stored chat history:', e);
-          chatHistory = {};
+        // Load chat history
+        if (result[CHAT_HISTORY_KEY]) {
+          try {
+            chatHistory = result[CHAT_HISTORY_KEY];
+          } catch (e) {
+            console.error('Error processing chat history:', e);
+            chatHistory = {};
+          }
+        } else {
+          // Try to get from localStorage as fallback for migration
+          const storedChatHistory = localStorage.getItem(CHAT_HISTORY_KEY);
+          if (storedChatHistory) {
+            try {
+              chatHistory = JSON.parse(storedChatHistory);
+              console.log('Migrating chat history from localStorage');
+              // Save to chrome.storage for future
+              chrome.storage.local.set({ [CHAT_HISTORY_KEY]: chatHistory });
+            } catch (e) {
+              console.error('Error parsing stored chat history from localStorage:', e);
+              chatHistory = {};
+            }
+          } else {
+            console.log('No saved chat history found');
+          }
         }
-      } else {
-        console.log('No saved chat history found in localStorage');
-      }
-      
-      resolve();
+        
+        // Load message audio data
+        if (result[MESSAGE_AUDIO_KEY]) {
+          try {
+            messageAudio = result[MESSAGE_AUDIO_KEY];
+            console.log('Loaded message audio data from chrome.storage:', Object.keys(messageAudio).length);
+          } catch (e) {
+            console.error('Error processing message audio:', e);
+            messageAudio = {};
+          }
+        } else {
+          // Try to get from localStorage as fallback for migration
+          const storedMessageAudio = localStorage.getItem(MESSAGE_AUDIO_KEY);
+          if (storedMessageAudio) {
+            try {
+              messageAudio = JSON.parse(storedMessageAudio);
+              console.log('Migrating message audio data from localStorage:', Object.keys(messageAudio).length);
+              // Save to chrome.storage for future
+              chrome.storage.local.set({ [MESSAGE_AUDIO_KEY]: messageAudio });
+              // Clear from localStorage to free up space
+              localStorage.removeItem(MESSAGE_AUDIO_KEY);
+            } catch (e) {
+              console.error('Error parsing stored message audio from localStorage:', e);
+              messageAudio = {};
+            }
+          } else {
+            console.log('No saved message audio found');
+          }
+        }
+        
+        resolve();
+      });
     } catch (e) {
-      console.error('Error accessing localStorage:', e);
+      console.error('Error accessing storage:', e);
       resolve();
     }
   });
@@ -68,10 +149,13 @@ window.BlockBuddy.Storage.loadProjectTokens = function() {
  */
 window.BlockBuddy.Storage.saveProjectTokens = function() {
   try {
-    localStorage.setItem(PROJECT_TOKENS_KEY, JSON.stringify(projectTokens));
-    console.log('Project tokens saved to localStorage');
+    chrome.storage.local.set({ [PROJECT_TOKENS_KEY]: projectTokens }, function() {
+      console.log('Project tokens saved to chrome.storage');
+    });
   } catch (e) {
-    console.error('Error saving to localStorage:', e);
+    console.error('Error saving to chrome.storage:', e);
+    // Fallback to localStorage
+    localStorage.setItem(PROJECT_TOKENS_KEY, JSON.stringify(projectTokens));
   }
 };
 
@@ -80,10 +164,13 @@ window.BlockBuddy.Storage.saveProjectTokens = function() {
  */
 window.BlockBuddy.Storage.saveChatHistory = function() {
   try {
-    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
-    console.log('Chat history saved to localStorage');
+    chrome.storage.local.set({ [CHAT_HISTORY_KEY]: chatHistory }, function() {
+      console.log('Chat history saved to chrome.storage');
+    });
   } catch (e) {
-    console.error('Error saving chat history to localStorage:', e);
+    console.error('Error saving chat history to chrome.storage:', e);
+    // Fallback to localStorage
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
   }
 };
 
@@ -128,8 +215,9 @@ window.BlockBuddy.Storage.getChatHistory = function(projectId) {
  * @param {string} projectId - The project ID
  * @param {string} message - The message text
  * @param {string} role - The role (user or assistant)
+ * @param {string} messageId - The message ID (optional)
  */
-window.BlockBuddy.Storage.addMessageToHistory = function(projectId, message, role) {
+window.BlockBuddy.Storage.addMessageToHistory = function(projectId, message, role, messageId) {
   if (!chatHistory[projectId]) {
     chatHistory[projectId] = [];
   }
@@ -138,7 +226,8 @@ window.BlockBuddy.Storage.addMessageToHistory = function(projectId, message, rol
   chatHistory[projectId].push({
     role: role,
     content: message,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    messageId: messageId || null
   });
   
   // Limit history to last 10 messages per project to avoid excessive storage
@@ -184,6 +273,88 @@ window.BlockBuddy.Storage.setGenerateAudioPreference = function(value) {
 };
 
 /**
+ * Add storage functions for message audio data
+ */
+window.BlockBuddy.Storage.getMessageAudio = function(messageId) {
+  return messageAudio[messageId] || null;
+};
+
+window.BlockBuddy.Storage.getAllMessageAudio = function(projectId) {
+  // Filter messages by project ID if provided
+  if (projectId) {
+    const projectMessages = {};
+    for (const messageId in messageAudio) {
+      if (messageAudio[messageId].projectId === projectId) {
+        projectMessages[messageId] = messageAudio[messageId];
+      }
+    }
+    return projectMessages;
+  }
+  return messageAudio;
+};
+
+window.BlockBuddy.Storage.saveMessageAudio = function(messageId, data) {
+  messageAudio[messageId] = data;
+  try {
+    chrome.storage.local.set({ [MESSAGE_AUDIO_KEY]: messageAudio }, function() {
+      console.log('Message audio saved to chrome.storage for message:', messageId);
+    });
+  } catch (e) {
+    console.error('Error saving message audio to chrome.storage:', e);
+    
+    // If there's an error, try to clean up old audio data
+    const keys = Object.keys(messageAudio);
+    if (keys.length > 10) {
+      console.log('Cleaning up old audio data...');
+      // Sort by timestamp and remove oldest entries
+      const sortedKeys = keys.sort((a, b) => messageAudio[a].timestamp - messageAudio[b].timestamp);
+      const keysToRemove = sortedKeys.slice(0, Math.ceil(keys.length / 2)); // Remove half of the entries
+      
+      keysToRemove.forEach(key => {
+        delete messageAudio[key];
+      });
+      
+      // Try saving again
+      try {
+        chrome.storage.local.set({ [MESSAGE_AUDIO_KEY]: messageAudio }, function() {
+          console.log('Cleaned up old audio data and saved successfully');
+        });
+      } catch (cleanupError) {
+        console.error('Still unable to save after cleanup:', cleanupError);
+      }
+    }
+  }
+};
+
+window.BlockBuddy.Storage.removeMessageAudio = function(messageId) {
+  if (messageAudio[messageId]) {
+    delete messageAudio[messageId];
+    chrome.storage.local.set({ [MESSAGE_AUDIO_KEY]: messageAudio }, function() {
+      console.log('Removed audio for message:', messageId);
+    });
+    return true;
+  }
+  return false;
+};
+
+window.BlockBuddy.Storage.clearAllMessageAudio = function() {
+  messageAudio = {};
+  chrome.storage.local.set({ [MESSAGE_AUDIO_KEY]: messageAudio }, function() {
+    console.log('Cleared all message audio data');
+  });
+};
+
+/**
+ * Generate a unique message ID
+ * @returns {string} A unique message ID
+ */
+window.BlockBuddy.Storage.generateMessageId = function() {
+  const timestamp = Date.now();
+  const randomPart = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `msg_${timestamp}_${randomPart}`;
+};
+
+/**
  * Add storage functions for model preference (thinking vs non-thinking)
  * Returns true for thinking model (o3-mini), false for non-thinking model (4o-mini)
  */
@@ -199,15 +370,15 @@ window.BlockBuddy.Storage.setModelPreference = function(value) {
  * Add storage functions for panel position
  */
 window.BlockBuddy.Storage.getPanelPosition = function() {
-  const storedPosition = localStorage.getItem(PANEL_POSITION_KEY);
-  if (storedPosition) {
-    return JSON.parse(storedPosition);
-  } else {
-    return {
-      snapEdges: { horizontal: 'bottom', vertical: 'right' },
-      width: 450,
-      height: 650
-    };
+  try {
+    const data = localStorage.getItem(PANEL_POSITION_KEY);
+    if (data) {
+      return JSON.parse(data);
+    }
+    return null;
+  } catch (e) {
+    console.error('Error getting panel position:', e);
+    return null;
   }
 };
 
@@ -219,31 +390,33 @@ window.BlockBuddy.Storage.savePanelPosition = function(position) {
  * Add storage functions for minimized button position
  */
 window.BlockBuddy.Storage.getMinimizedButtonPosition = function() {
-  const storedPosition = localStorage.getItem(MINIMIZED_BUTTON_POSITION_KEY);
-  if (storedPosition) {
-    return JSON.parse(storedPosition);
-  } else {
-    return {
-      snapEdges: { horizontal: null, vertical: 'right' },
-      position: -1,
-    };
+  try {
+    const data = localStorage.getItem(MINIMIZED_BUTTON_POSITION_KEY);
+    if (data) {
+      return JSON.parse(data);
+    }
+    return null;
+  } catch (e) {
+    console.error('Error getting minimized button position:', e);
+    return null;
   }
 };
 
 window.BlockBuddy.Storage.saveMinimizedButtonPosition = function(position) {
-  localStorage.setItem(MINIMIZED_BUTTON_POSITION_KEY, JSON.stringify({
-    snapEdges: position.snapEdges,
-    position: position.position
-  }));
+  localStorage.setItem(MINIMIZED_BUTTON_POSITION_KEY, JSON.stringify(position));
 };
 
 /**
  * Add storage functions for UI state (minimized/maximized)
  */
 window.BlockBuddy.Storage.getUIState = function() {
-  const state = localStorage.getItem(UI_STATE_KEY);
-  if (state) {
-    return JSON.parse(state);
+  try {
+    const data = localStorage.getItem(UI_STATE_KEY);
+    if (data) {
+      return JSON.parse(data);
+    }
+  } catch (e) {
+    console.error('Error getting UI state:', e);
   }
   return { minimized: false }; // Default to maximized
 };

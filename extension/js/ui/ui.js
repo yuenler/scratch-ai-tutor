@@ -1174,7 +1174,7 @@ modelToggleInput.addEventListener('change', function() {
   userInput.style.flex = "1";
   userInput.style.border = "1px solid #ddd";
   userInput.style.borderRadius = "18px";
-  userInput.style.padding = "8px 15px";
+  userInput.style.padding = "10px 15px";
   userInput.style.fontSize = "14px";
   userInput.style.resize = "none";
   userInput.style.outline = "none";
@@ -1785,9 +1785,10 @@ modelToggleInput.addEventListener('change', function() {
  * @param {string} audioBase64 - The base64 encoded audio data
  * @param {string} audioFormat - The audio format (e.g., 'mp3')
  * @param {boolean} autoplay - Whether to autoplay the audio
+ * @param {boolean} isReloadedMessage - Whether this message is being loaded on page reload
  * @returns {Object} Object containing audio element and controls
  */
-window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, autoplay = false) {
+window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, autoplay = false, isReloadedMessage = false) {
   // Create container for audio controls
   const audioContainer = document.createElement('div');
   audioContainer.className = 'audio-controls';
@@ -1861,6 +1862,7 @@ window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, auto
   playTriangle.style.borderBottom = '7px solid transparent';
   playTriangle.style.borderLeft = '12px solid #4c97ff';
   playTriangle.style.marginLeft = '2px'; // Offset for visual centering
+  playTriangle.style.visibility = 'visible'; // Always show play icon on creation
   
   // Create a completely new pause icon approach
   const pauseIcon = document.createElement('div');
@@ -1873,7 +1875,7 @@ window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, auto
   pauseIcon.style.display = 'flex';
   pauseIcon.style.justifyContent = 'center';
   pauseIcon.style.alignItems = 'center';
-  pauseIcon.style.visibility = 'hidden';
+  pauseIcon.style.visibility = 'hidden'; // Always hide pause icon on creation
   
   // Create a single SVG element for the pause icon
   const pauseSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -2043,8 +2045,8 @@ window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, auto
   audioContainer.appendChild(playButtonContainer);
   audioContainer.appendChild(toggleContainer);
   
-  // Auto-play if setting is enabled
-  if (toggleInput.checked && autoplay) {
+  // Auto-play if setting is enabled and this is NOT a reloaded message
+  if (toggleInput.checked && autoplay && !isReloadedMessage) {
     setTimeout(() => {
       audio.play();
       playTriangle.style.visibility = 'hidden';
@@ -2066,14 +2068,25 @@ window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, auto
  * @param {ShadowRoot} shadow - The shadow DOM root
  * @param {string} content - The message content
  * @param {string} type - The message type (user or assistant)
- * @param {string} audioData - The base64 encoded audio data
- * @param {string} audioFormat - The audio format (e.g., 'mp3')
+ * @param {string} audioData - The base64 encoded audio data (optional)
+ * @param {string} audioFormat - The audio format (e.g., 'mp3') (optional)
+ * @param {string} messageId - The unique ID for this message (optional)
  * @param {boolean} renderScratchblocks - Whether to render scratchblocks immediately (default: true)
  * @returns {HTMLElement} The message content element for further operations
  */
-window.BlockBuddy.UI.addMessage = function(chatBody, shadow, content, type, audioData, audioFormat, renderScratchblocks = true) {
+window.BlockBuddy.UI.addMessage = function(chatBody, shadow, content, type, audioData, audioFormat, messageId, renderScratchblocks = true) {
+  // Generate a message ID if one wasn't provided for assistant messages
+  if (!messageId && type === "assistant") {
+    messageId = window.BlockBuddy.Storage.generateMessageId();
+  }
+
   const messageDiv = document.createElement("div");
   messageDiv.className = `message ${type}-message`;
+  
+  // If we have a message ID, store it as a data attribute
+  if (messageId) {
+    messageDiv.dataset.messageId = messageId;
+  }
   
   // Apply initial state for animation
   messageDiv.style.opacity = "0";
@@ -2108,16 +2121,74 @@ window.BlockBuddy.UI.addMessage = function(chatBody, shadow, content, type, audi
     messageDiv.appendChild(messageHeader);
     messageDiv.appendChild(messageContent);
     
+    // Check for provided audio or look for saved audio in localStorage
+    if (!audioData && messageId) {
+      const savedAudio = window.BlockBuddy.Storage.getMessageAudio(messageId);
+      if (savedAudio && savedAudio.audioData) {
+        console.log("Found saved audio for message ID:", messageId);
+        audioData = savedAudio.audioData;
+        audioFormat = savedAudio.audioFormat;
+      } else {
+        // If specific message ID doesn't have audio, check for content-based matches
+        // This is useful for history messages where we might not have exact IDs
+        const projectId = window.location.href.match(/\/projects\/(\d+)/)?.[1] || 'unknown';
+        const allProjectAudio = window.BlockBuddy.Storage.getAllMessageAudio(projectId);
+        
+        // Generate a simple hash of the content to match against
+        const contentHash = content.trim().substring(0, 100);
+        
+        // Look for any audio data that might match this message content
+        for (const storedMsgId in allProjectAudio) {
+          if (storedMsgId.startsWith('history_') || storedMsgId.includes(projectId)) {
+            // We found audio that belongs to this project, let's use it
+            console.log("Found project audio for message:", storedMsgId);
+            audioData = allProjectAudio[storedMsgId].audioData;
+            audioFormat = allProjectAudio[storedMsgId].audioFormat;
+            
+            // Save it with our current message ID for future reference
+            window.BlockBuddy.Storage.saveMessageAudio(messageId, {
+              audioData: audioData,
+              audioFormat: audioFormat,
+              timestamp: Date.now(),
+              projectId: projectId,
+              contentHash: contentHash
+            });
+            
+            break;
+          }
+        }
+      }
+    }
+    
     // Add audio player if audio data is available
     if (audioData) {
+      // For messages loaded from history (on page reload), NEVER autoplay
+      const isReloadedMessage = document.readyState === 'complete' || 
+                               window.performance && 
+                               window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD;
+      
+      // Only allow autoplay for newly generated messages, and never on page reload
+      const shouldAutoplay = !isReloadedMessage && window.BlockBuddy.Storage.getAutoplayPreference();
+      
       const audioPlayer = window.BlockBuddy.UI.createAudioPlayer(
         audioData, 
         audioFormat, 
-        true // Allow autoplay based on user preference
+        shouldAutoplay, // No autoplay on reload
+        isReloadedMessage // Pass info that this is a reloaded message
       );
       messageDiv.appendChild(audioPlayer.container);
+      
+      // If this is new audio data being added and we have a message ID, save it
+      if (messageId && !window.BlockBuddy.Storage.getMessageAudio(messageId)) {
+        const projectId = window.location.href.match(/\/projects\/(\d+)/)?.[1] || 'unknown';
+        window.BlockBuddy.Storage.saveMessageAudio(messageId, {
+          audioData: audioData,
+          audioFormat: audioFormat,
+          timestamp: Date.now(),
+          projectId: projectId
+        });
+      }
     }
-    
     chatBody.appendChild(messageDiv);
     
     // Trigger animation after a short delay
