@@ -232,7 +232,14 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         
         const messageIcon = document.createElement("div");
         messageIcon.className = "message-icon";
-        messageIcon.textContent = "🧩";
+        
+        // Use BlockBuddy icon instead of emoji
+        const iconImg = document.createElement("img");
+        iconImg.src = chrome.runtime.getURL("images/icon32.png");
+        iconImg.style.width = "24px";
+        iconImg.style.height = "24px";
+        iconImg.style.borderRadius = "50%";
+        messageIcon.appendChild(iconImg);
         
         const messageTitle = document.createElement("div");
         messageTitle.className = "message-title";

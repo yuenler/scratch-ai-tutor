@@ -486,6 +486,7 @@ window.BlockBuddy.UI.createUI = function() {
     .thinking-dots {
       display: flex;
       margin-left: 5px;
+      margin-top: 8px;
     }
     
     .dot {
@@ -1794,7 +1795,6 @@ window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, auto
   audioContainer.className = 'audio-controls';
   audioContainer.style.display = 'flex';
   audioContainer.style.alignItems = 'center';
-  audioContainer.style.marginTop = '10px';
   audioContainer.style.gap = '15px';
   
   // Create audio element
@@ -2097,7 +2097,18 @@ window.BlockBuddy.UI.addMessage = function(chatBody, shadow, content, type, audi
   
   const messageIcon = document.createElement("div");
   messageIcon.className = "message-icon";
-  messageIcon.textContent = type === "assistant" ? "🧩" : "👩‍💻";
+  
+  if (type === "assistant") {
+    // Use the BlockBuddy icon
+    const iconImg = document.createElement("img");
+    iconImg.src = chrome.runtime.getURL("images/icon32.png");
+    iconImg.style.width = "24px";
+    iconImg.style.height = "24px";
+    iconImg.style.borderRadius = "50%";
+    messageIcon.appendChild(iconImg);
+  } else {
+    messageIcon.textContent = "👩‍💻";
+  }
   
   const messageTitle = document.createElement("div");
   messageTitle.className = "message-title";
@@ -2239,7 +2250,9 @@ window.BlockBuddy.UI.showThinkingIndicator = function(chatBody) {
   const thinkingDiv = document.createElement("div");
   thinkingDiv.className = "thinking-indicator";
   thinkingDiv.innerHTML = `
-    <div class="thinking-icon">🧩</div>
+    <div class="thinking-icon">
+      <img src="${chrome.runtime.getURL("images/icon32.png")}" style="width: 24px; height: 24px; border-radius: 50%;">
+    </div>
     <div>Thinking<div class="thinking-dots">
       <div class="dot"></div>
       <div class="dot"></div>
