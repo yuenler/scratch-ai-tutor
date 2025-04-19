@@ -249,8 +249,8 @@ window.BlockBuddy.UI.createUI = function() {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      width: 450px;
-      height: 650px;
+      width: 550px;
+      height: 750px;
       background-color: white;
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -986,8 +986,8 @@ window.BlockBuddy.UI.createUI = function() {
   panel.style.left = "initial";
   panel.style.bottom = "20px";
   panel.style.right = "20px";
-  panel.style.width = "450px";
-  panel.style.height = "650px";
+  panel.style.width = "550px";
+  panel.style.height = "750px";
   panel.style.background = "white";
   panel.style.borderRadius = "10px";
   panel.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
