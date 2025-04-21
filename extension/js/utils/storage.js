@@ -23,14 +23,16 @@ let chatHistory = {};
 let messageAudio = {};
 
 // Cache for simple preferences to avoid excessive chrome.storage calls
+// These are initial values that will be immediately replaced with saved values 
+// from chrome.storage when loadProjectTokens() is called
 let preferencesCache = {
-  autoplay: false,
-  modelPreference: true,
-  uiState: { minimized: false },
+  autoplay: null,
+  modelPreference: null,
+  uiState: { minimized: false }, // Must initialize with valid object to prevent null reference errors
   panelPosition: null,
   minimizedButtonPosition: null,
-  screenshotEnabled: false,
-  generateAudio: true
+  screenshotEnabled: null, 
+  generateAudio: null
 };
 
 /**
@@ -53,14 +55,37 @@ window.BlockBuddy.Storage.loadProjectTokens = function() {
         SCREENSHOT_ENABLED_KEY,
         GENERATE_AUDIO_KEY
       ], (result) => {
-        // Load preferences into cache
-        preferencesCache.autoplay = result[AUTOPLAY_KEY] !== undefined ? result[AUTOPLAY_KEY] : false;
-        preferencesCache.modelPreference = result[MODEL_PREFERENCE_KEY] !== undefined ? result[MODEL_PREFERENCE_KEY] : true;
-        preferencesCache.uiState = result[UI_STATE_KEY] || { minimized: false };
+        // Define default values to use only when preference doesn't exist
+        const defaultValues = {
+          autoplay: false,
+          modelPreference: true,
+          uiState: { minimized: false },
+          screenshotEnabled: false,
+          generateAudio: true
+        };
+
+        // Load each preference, using default only if completely undefined
+        preferencesCache.autoplay = result[AUTOPLAY_KEY] !== undefined ? result[AUTOPLAY_KEY] : defaultValues.autoplay;
+        preferencesCache.modelPreference = result[MODEL_PREFERENCE_KEY] !== undefined ? result[MODEL_PREFERENCE_KEY] : defaultValues.modelPreference;
+        preferencesCache.uiState = result[UI_STATE_KEY] || defaultValues.uiState;
         preferencesCache.panelPosition = result[PANEL_POSITION_KEY] || null;
         preferencesCache.minimizedButtonPosition = result[MINIMIZED_BUTTON_POSITION_KEY] || null;
-        preferencesCache.screenshotEnabled = result[SCREENSHOT_ENABLED_KEY] !== undefined ? result[SCREENSHOT_ENABLED_KEY] : false;
-        preferencesCache.generateAudio = result[GENERATE_AUDIO_KEY] !== undefined ? result[GENERATE_AUDIO_KEY] : true;
+        preferencesCache.screenshotEnabled = result[SCREENSHOT_ENABLED_KEY] !== undefined ? result[SCREENSHOT_ENABLED_KEY] : defaultValues.screenshotEnabled;
+        preferencesCache.generateAudio = result[GENERATE_AUDIO_KEY] !== undefined ? result[GENERATE_AUDIO_KEY] : defaultValues.generateAudio;
+        
+        // Save default values to storage if they weren't already set
+        // This initializes storage the first time but doesn't overwrite existing values
+        const missingPreferences = {};
+        if (result[AUTOPLAY_KEY] === undefined) missingPreferences[AUTOPLAY_KEY] = defaultValues.autoplay;
+        if (result[MODEL_PREFERENCE_KEY] === undefined) missingPreferences[MODEL_PREFERENCE_KEY] = defaultValues.modelPreference;
+        if (!result[UI_STATE_KEY]) missingPreferences[UI_STATE_KEY] = defaultValues.uiState;
+        if (result[SCREENSHOT_ENABLED_KEY] === undefined) missingPreferences[SCREENSHOT_ENABLED_KEY] = defaultValues.screenshotEnabled;
+        if (result[GENERATE_AUDIO_KEY] === undefined) missingPreferences[GENERATE_AUDIO_KEY] = defaultValues.generateAudio;
+        
+        // If any preferences were missing, save the defaults to storage
+        if (Object.keys(missingPreferences).length > 0) {
+          chrome.storage.local.set(missingPreferences);
+        }
         
         // Load project tokens
         if (result[PROJECT_TOKENS_KEY]) {
