@@ -61,7 +61,8 @@ window.BlockBuddy.Storage.loadProjectTokens = function() {
           modelPreference: true,
           uiState: { minimized: false },
           screenshotEnabled: false,
-          generateAudio: true
+          generateAudio: true,
+          minimizedButtonPosition: { position: 100, snapEdges: { horizontal: null, vertical: 'right' } }
         };
 
         // Load each preference, using default only if completely undefined
@@ -69,7 +70,7 @@ window.BlockBuddy.Storage.loadProjectTokens = function() {
         preferencesCache.modelPreference = result[MODEL_PREFERENCE_KEY] !== undefined ? result[MODEL_PREFERENCE_KEY] : defaultValues.modelPreference;
         preferencesCache.uiState = result[UI_STATE_KEY] || defaultValues.uiState;
         preferencesCache.panelPosition = result[PANEL_POSITION_KEY] || null;
-        preferencesCache.minimizedButtonPosition = result[MINIMIZED_BUTTON_POSITION_KEY] || null;
+        preferencesCache.minimizedButtonPosition = result[MINIMIZED_BUTTON_POSITION_KEY] || defaultValues.minimizedButtonPosition;
         preferencesCache.screenshotEnabled = result[SCREENSHOT_ENABLED_KEY] !== undefined ? result[SCREENSHOT_ENABLED_KEY] : defaultValues.screenshotEnabled;
         preferencesCache.generateAudio = result[GENERATE_AUDIO_KEY] !== undefined ? result[GENERATE_AUDIO_KEY] : defaultValues.generateAudio;
         
