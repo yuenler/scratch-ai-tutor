@@ -33,7 +33,7 @@ window.BlockBuddy.API.sendQuestionToAPI = function(
   
   // Get model preference (true = thinking model, false = non-thinking model)
   const useThinkingModel = window.BlockBuddy.Storage.getModelPreference();
-  console.log(`Using model: ${useThinkingModel ? 'thinking (o3-mini)' : 'non-thinking (4o-mini)'}`);
+  console.log(`Using model: ${useThinkingModel ? 'thinking (o4-mini)' : 'non-thinking (4o-mini)'}`);
   
   // Prepare the request data
   const requestData = {

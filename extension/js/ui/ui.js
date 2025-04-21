@@ -1122,7 +1122,7 @@ modelToggleInput.addEventListener('change', function() {
   
   // Save the preference
   window.BlockBuddy.Storage.setModelPreference(isChecked);
-  console.log(`Model preference changed to: ${isChecked ? 'thinking (o3-mini)' : 'non-thinking (4o-mini)'}`);
+  console.log(`Model preference changed to: ${isChecked ? 'thinking (o4-mini)' : 'non-thinking (4o-mini)'}`);
   
   // If thinking mode is enabled, disable screenshot toggle
   if (isChecked) {
