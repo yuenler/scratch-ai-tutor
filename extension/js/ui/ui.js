@@ -720,185 +720,70 @@ window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, auto
   // Create container for audio controls
   const audioContainer = document.createElement('div');
   audioContainer.className = 'audio-controls';
-  audioContainer.style.display = 'flex';
-  audioContainer.style.alignItems = 'center';
-  audioContainer.style.gap = '15px';
+  
+  // Get the autoplay preference
+  const autoplayPreference = window.BlockBuddy.Storage.getAutoplayPreference() || false;
+  
+  // Create HTML with inline CSS
+  audioContainer.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 0.9375rem;">
+      <!-- Play button container -->
+      <div class="circular-play-button-container" style="position: relative; width: 2.5rem; height: 2.5rem;">
+        <!-- SVG for progress circle -->
+        <svg width="40" height="40" viewBox="0 0 40 40">
+          <circle cx="20" cy="20" r="18" fill="none" stroke="#e6e6e6" stroke-width="3"></circle>
+          <circle class="progress-circle" cx="20" cy="20" r="18" fill="none" stroke="#4c97ff" stroke-width="3" 
+            stroke-dasharray="113" stroke-dashoffset="113" transform="rotate(-90 20 20)"></circle>
+        </svg>
+        
+        <!-- Play/pause icon -->
+        <div class="play-pause-icon" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+          width: 0.875rem; height: 0.875rem; display: flex; align-items: center; justify-content: center;">
+          
+          <!-- Play triangle -->
+          <div class="play-triangle" style="width: 0; height: 0; border-top: 0.4375rem solid transparent; 
+            border-bottom: 0.4375rem solid transparent; border-left: 0.75rem solid #4c97ff; 
+            margin-left: 0.125rem; visibility: visible;"></div>
+            
+          <!-- Pause icon -->
+          <div class="pause-icon" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; justify-content: center; align-items: center; visibility: hidden;">
+            <svg width="14" height="14" viewBox="0 0 14 14">
+              <rect x="2" y="0" width="4" height="14" fill="#4c97ff"></rect>
+              <rect x="8" y="0" width="4" height="14" fill="#4c97ff"></rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Toggle switch container -->
+      <div class="toggle-switch-container" style="display: flex; align-items: center; gap: 0.5rem;">
+        <label class="toggle-switch" style="position: relative; display: inline-block; width: 2.25rem; height: 1.25rem;">
+          <input type="checkbox" class="autoplay-toggle" style="opacity: 0; width: 0; height: 0;" ${autoplayPreference ? 'checked' : ''}>
+          <span class="autoplay-toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; 
+            transition: .4s; border-radius: 1.25rem; background-color: ${autoplayPreference ? '#4c97ff' : '#ccc'};">
+            <span class="autoplay-toggle-circle" style="position: absolute; content: ''; height: 1rem; width: 1rem; 
+              left: 0.125rem; bottom: 0.125rem; background-color: white; transition: .4s; border-radius: 50%; 
+              transform: ${autoplayPreference ? 'translateX(1rem)' : 'none'};"></span>
+          </span>
+        </label>
+        <span style="font-size: 0.75rem; color: #575e75; user-select: none;">Autoplay audio</span>
+      </div>
+    </div>
+  `;
   
   // Create audio element
   const audio = document.createElement('audio');
   audio.src = `data:audio/${audioFormat};base64,${audioBase64}`;
   
-  // Create the circular play button container
-  const playButtonContainer = document.createElement('div');
-  playButtonContainer.className = 'circular-play-button-container';
-  playButtonContainer.style.position = 'relative';
-  playButtonContainer.style.width = '40px';
-  playButtonContainer.style.height = '40px';
-  
-  // Create the progress circle (SVG)
-  const svgNS = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(svgNS, "svg");
-  svg.setAttribute("width", "40");
-  svg.setAttribute("height", "40");
-  svg.setAttribute("viewBox", "0 0 40 40");
-  
-  // Background circle
-  const bgCircle = document.createElementNS(svgNS, "circle");
-  bgCircle.setAttribute("cx", "20");
-  bgCircle.setAttribute("cy", "20");
-  bgCircle.setAttribute("r", "18");
-  bgCircle.setAttribute("fill", "none");
-  bgCircle.setAttribute("stroke", "#e6e6e6");
-  bgCircle.setAttribute("stroke-width", "3");
-  
-  // Progress circle
-  const progressCircle = document.createElementNS(svgNS, "circle");
-  progressCircle.setAttribute("cx", "20");
-  progressCircle.setAttribute("cy", "20");
-  progressCircle.setAttribute("r", "18");
-  progressCircle.setAttribute("fill", "none");
-  progressCircle.setAttribute("stroke", "#4c97ff");
-  progressCircle.setAttribute("stroke-width", "3");
-  progressCircle.setAttribute("stroke-dasharray", "113");  // Circumference = 2*PI*r
-  progressCircle.setAttribute("stroke-dashoffset", "113"); // Initially, no progress
-  progressCircle.setAttribute("transform", "rotate(-90 20 20)"); // Start from top
-  
-  svg.appendChild(bgCircle);
-  svg.appendChild(progressCircle);
-  playButtonContainer.appendChild(svg);
-  
-  // Create the play button (icon in the center)
-  const playIcon = document.createElement('div');
-  playIcon.className = 'play-pause-icon';
-  playIcon.style.position = 'absolute';
-  playIcon.style.top = '50%';
-  playIcon.style.left = '50%';
-  playIcon.style.transform = 'translate(-50%, -50%)';
-  playIcon.style.width = '14px';
-  playIcon.style.height = '14px';
-  playIcon.style.display = 'flex';
-  playIcon.style.alignItems = 'center';
-  playIcon.style.justifyContent = 'center';
-  
-  // Add play icon (triangle)
-  const playTriangle = document.createElement('div');
-  playTriangle.className = 'play-triangle';
-  playTriangle.style.width = '0';
-  playTriangle.style.height = '0';
-  playTriangle.style.borderTop = '7px solid transparent';
-  playTriangle.style.borderBottom = '7px solid transparent';
-  playTriangle.style.borderLeft = '12px solid #4c97ff';
-  playTriangle.style.marginLeft = '2px'; // Offset for visual centering
-  playTriangle.style.visibility = 'visible'; // Always show play icon on creation
-  
-  // Create a completely new pause icon approach
-  const pauseIcon = document.createElement('div');
-  pauseIcon.className = 'pause-icon';
-  pauseIcon.style.position = 'absolute';
-  pauseIcon.style.top = '0';
-  pauseIcon.style.left = '0';
-  pauseIcon.style.width = '100%';
-  pauseIcon.style.height = '100%';
-  pauseIcon.style.display = 'flex';
-  pauseIcon.style.justifyContent = 'center';
-  pauseIcon.style.alignItems = 'center';
-  pauseIcon.style.visibility = 'hidden'; // Always hide pause icon on creation
-  
-  // Create a single SVG element for the pause icon
-  const pauseSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  pauseSvg.setAttribute("width", "14");
-  pauseSvg.setAttribute("height", "14");
-  pauseSvg.setAttribute("viewBox", "0 0 14 14");
-  
-  // First pause bar
-  const rect1 = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-  rect1.setAttribute("x", "2");
-  rect1.setAttribute("y", "0");
-  rect1.setAttribute("width", "4");
-  rect1.setAttribute("height", "14");
-  rect1.setAttribute("fill", "#4c97ff");
-  
-  // Second pause bar
-  const rect2 = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-  rect2.setAttribute("x", "8");
-  rect2.setAttribute("y", "0");
-  rect2.setAttribute("width", "4");
-  rect2.setAttribute("height", "14");
-  rect2.setAttribute("fill", "#4c97ff");
-  
-  // Add the rectangles to the SVG
-  pauseSvg.appendChild(rect1);
-  pauseSvg.appendChild(rect2);
-  pauseIcon.appendChild(pauseSvg);
-  
-  playIcon.appendChild(playTriangle);
-  playIcon.appendChild(pauseIcon);
-  playButtonContainer.appendChild(playIcon);
-  
-  // Create toggle switch for autoplay
-  const toggleContainer = document.createElement('div');
-  toggleContainer.className = 'toggle-switch-container';
-  toggleContainer.style.display = 'flex';
-  toggleContainer.style.alignItems = 'center';
-  toggleContainer.style.gap = '8px';
-  
-  // Create the toggle switch
-  const toggleSwitch = document.createElement('label');
-  toggleSwitch.className = 'toggle-switch';
-  toggleSwitch.style.position = 'relative';
-  toggleSwitch.style.display = 'inline-block';
-  toggleSwitch.style.width = '36px';
-  toggleSwitch.style.height = '20px';
-  
-  const toggleInput = document.createElement('input');
-  toggleInput.type = 'checkbox';
-  toggleInput.checked = window.BlockBuddy.Storage.getAutoplayPreference() || false;
-  toggleInput.style.opacity = '0';
-  toggleInput.style.width = '0';
-  toggleInput.style.height = '0';
-  
-  const toggleSlider = document.createElement('span');
-  toggleSlider.className = 'toggle-slider';
-  toggleSlider.style.position = 'absolute';
-  toggleSlider.style.cursor = 'pointer';
-  toggleSlider.style.top = '0';
-  toggleSlider.style.left = '0';
-  toggleSlider.style.right = '0';
-  toggleSlider.style.bottom = '0';
-  toggleSlider.style.transition = '.4s';
-  toggleSlider.style.borderRadius = '20px';
-  
-  // Create the slider circle
-  const toggleCircle = document.createElement('span');
-  toggleCircle.style.position = 'absolute';
-  toggleCircle.style.content = '""';
-  toggleCircle.style.height = '16px';
-  toggleCircle.style.width = '16px';
-  toggleCircle.style.left = '2px';
-  toggleCircle.style.bottom = '2px';
-  toggleCircle.style.backgroundColor = 'white';
-  toggleCircle.style.transition = '.4s';
-  toggleCircle.style.borderRadius = '50%';
-  
-  toggleSlider.appendChild(toggleCircle);
-  toggleSwitch.appendChild(toggleInput);
-  toggleSwitch.appendChild(toggleSlider);
-  
-  // Create the label for the toggle
-  const toggleLabel = document.createElement('span');
-  toggleLabel.textContent = 'Autoplay audio';
-  toggleLabel.style.fontSize = '12px';
-  toggleLabel.style.color = '#575e75';
-  toggleLabel.style.userSelect = 'none';
-  
-  toggleContainer.appendChild(toggleSwitch);
-  toggleContainer.appendChild(toggleLabel);
-  
-  // Update toggle styling when checked
-  if (toggleInput.checked) {
-    toggleSlider.style.backgroundColor = '#4c97ff';
-    toggleCircle.style.transform = 'translateX(16px)';
-  }
+  // Get elements by class/tag
+  const playButtonContainer = audioContainer.querySelector('.circular-play-button-container');
+  const progressCircle = audioContainer.querySelector('.progress-circle');
+  const playTriangle = audioContainer.querySelector('.play-triangle');
+  const pauseIcon = audioContainer.querySelector('.pause-icon');
+  const toggleInput = audioContainer.querySelector('.autoplay-toggle');
+  const toggleSlider = audioContainer.querySelector('.autoplay-toggle-slider');
+  const toggleCircle = audioContainer.querySelector('.autoplay-toggle-circle');
   
   // Add click event to play button
   playButtonContainer.addEventListener('click', function() {
@@ -960,16 +845,12 @@ window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, auto
     // Update the toggle slider appearance
     if (toggleInput.checked) {
       toggleSlider.style.backgroundColor = '#4c97ff';
-      toggleCircle.style.transform = 'translateX(16px)';
+      toggleCircle.style.transform = 'translateX(1rem)';
     } else {
       toggleSlider.style.backgroundColor = '#ccc';
-      toggleCircle.style.transform = 'translateX(0)';
+      toggleCircle.style.transform = 'none';
     }
   });
-  
-  // Append elements to container
-  audioContainer.appendChild(playButtonContainer);
-  audioContainer.appendChild(toggleContainer);
   
   // Auto-play if setting is enabled and this is NOT a reloaded message
   if (toggleInput.checked && autoplay && !isReloadedMessage) {
