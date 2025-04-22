@@ -786,17 +786,17 @@ window.BlockBuddy.UI.createAudioPlayer = function(audioBase64, audioFormat, auto
       </div>
       
       <!-- Toggle switch container -->
-      <div class="toggle-switch-container" style="display: flex; align-items: center; gap: 0.5rem;">
-        <label class="toggle-switch" style="position: relative; display: inline-block; width: 2.25rem; height: 1.25rem;">
+      <div class="toggle-switch-container" style="display: flex; align-items: center; gap: 8px;">
+        <label class="toggle-switch" style="position: relative; display: inline-block; width: 36px; height: 20px;">
           <input type="checkbox" class="autoplay-toggle" style="opacity: 0; width: 0; height: 0;" ${autoplayPreference ? 'checked' : ''}>
           <span class="autoplay-toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; 
-            transition: .4s; border-radius: 1.25rem; background-color: ${autoplayPreference ? '#4c97ff' : '#ccc'};">
-            <span class="autoplay-toggle-circle" style="position: absolute; content: ''; height: 1rem; width: 1rem; 
-              left: 0.125rem; bottom: 0.125rem; background-color: white; transition: .4s; border-radius: 50%; 
-              transform: ${autoplayPreference ? 'translateX(1rem)' : 'none'};"></span>
+            transition: .4s; border-radius: 20px; background-color: ${autoplayPreference ? '#4c97ff' : '#ccc'};">
+            <span class="autoplay-toggle-circle" style="position: absolute; content: ''; height: 16px; width: 16px; 
+              left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; 
+              transform: ${autoplayPreference ? 'translateX(16px)' : 'none'};"></span>
           </span>
         </label>
-        <span style="font-size: 0.75rem; color: #575e75; user-select: none;">Autoplay audio</span>
+        <span style="font-size: 12px; color: #575e75; user-select: none;">Autoplay audio</span>
       </div>
     </div>
   `;

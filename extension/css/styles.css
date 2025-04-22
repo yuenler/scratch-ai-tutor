@@ -22,7 +22,7 @@
   border: 1px solid #ddd;
   overflow: hidden;
   resize: both;
-  min-width: 200px; /* Allow resizing to smaller widths */
+  min-width: 500px; /* Allow resizing to smaller widths */
   min-height: 300px; /* Allow resizing to smaller heights */
 }
 
