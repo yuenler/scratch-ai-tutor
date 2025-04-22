@@ -645,6 +645,34 @@ window.BlockBuddy.UI.createUI = function() {
       }
     });
     
+    // Add window resize event listener to handle panel size
+    window.addEventListener('resize', function() {
+      // Only check if the panel is visible
+      if (panel.style.display !== "none") {
+        const windowHeight = window.innerHeight;
+        const windowWidth = window.innerWidth;
+        const panelHeight = panel.offsetHeight;
+        const panelWidth = panel.offsetWidth;
+        
+        // Check if panel height is larger than window height
+        if (panelHeight > windowHeight * 0.9) {
+          panel.style.height = '80vh';
+        }
+        
+        // Check if panel width is larger than window width
+        if (panelWidth > windowWidth * 0.5) {
+          panel.style.width = '40vw';
+        }
+        
+        // Save the updated panel position
+        window.BlockBuddy.Storage.savePanelPosition({
+          snapEdges: window.BlockBuddy.UI.getSnapEdges(panel, 'panel'),
+          width: panel.offsetWidth,
+          height: panel.offsetHeight
+        });
+      }
+    });
+    
     // Add close button event listener
     closeButtonEl.addEventListener('click', () => {
       window.BlockBuddy.UI.hidePanel(panel, minimizedButton);
