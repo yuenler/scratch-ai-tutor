@@ -316,7 +316,7 @@ window.BlockBuddy.Storage.generateMessageId = function() {
 
 /**
  * Add storage functions for model preference (thinking vs non-thinking)
- * Returns true for thinking model (o4-mini), false for non-thinking model (4o-mini)
+ * Returns true for thinking model (o4-mini), false for non-thinking model (gpt-4.1)
  */
 window.BlockBuddy.Storage.getModelPreference = function() {
   return preferencesCache.modelPreference;

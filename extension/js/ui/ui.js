@@ -394,7 +394,7 @@ window.BlockBuddy.UI.createUI = function() {
       
       // Save the preference
       window.BlockBuddy.Storage.setModelPreference(isChecked);
-      console.log(`Model preference changed to: ${isChecked ? 'thinking (o4-mini)' : 'non-thinking (4o-mini)'}`);
+      console.log(`Model preference changed to: ${isChecked ? 'thinking (o4-mini)' : 'non-thinking (gpt-4.1)'}`);
       
       // If thinking mode is enabled, disable screenshot toggle
       if (isChecked) {
