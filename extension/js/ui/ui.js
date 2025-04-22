@@ -417,33 +417,6 @@ window.BlockBuddy.UI.createUI = function() {
       // Save the preference
       window.BlockBuddy.Storage.setModelPreference(isChecked);
       console.log(`Model preference changed to: ${isChecked ? 'thinking (o4-mini)' : 'non-thinking (gpt-4.1)'}`);
-      
-      // If thinking mode is enabled, disable screenshot toggle
-      if (isChecked) {
-        // Turn off screenshot toggle
-        screenshotToggleInput.checked = false;
-        window.BlockBuddy.Storage.setScreenshotPreference(false);
-        screenshotToggleSlider.style.backgroundColor = '#ccc';
-        screenshotToggleCircle.style.transform = 'none';
-        
-        // Disable screenshot toggle
-        screenshotToggleInput.disabled = true;
-        screenshotToggleSlider.style.opacity = '0.5';
-        screenshotToggleSlider.style.cursor = 'not-allowed';
-        screenshotToggleContainer.style.opacity = '0.5';
-        
-        // Add tooltip to show explanation
-        screenshotToggleContainer.title = "Screenshot feature is disabled in Thinking Mode - the thinking model doesn't support image input";
-      } else {
-        // Re-enable screenshot toggle
-        screenshotToggleInput.disabled = false;
-        screenshotToggleSlider.style.opacity = '1';
-        screenshotToggleSlider.style.cursor = 'pointer';
-        screenshotToggleContainer.style.opacity = '1';
-        
-        // Remove tooltip
-        screenshotToggleContainer.title = "";
-      }
     });
     
     // Screenshot toggle event listener
