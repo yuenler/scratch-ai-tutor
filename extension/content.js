@@ -137,7 +137,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       // Get project ID
       const projectId = window.BlockBuddy.Utils.getProjectId(window.location.href);
       if (!projectId) {
-        window.BlockBuddy.UI.addMessage(chatBodyEl, shadow, "Sorry, I couldn't identify the project ID.", "assistant");
+        window.BlockBuddy.UI.addMessage(chatBodyEl, shadow, "To use BlockBuddy, you need to login to your Scratch account and share your project.", "assistant");
         return;
       }
       
