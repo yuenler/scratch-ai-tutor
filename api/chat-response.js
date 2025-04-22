@@ -86,7 +86,7 @@ export default async function handler(req, res) {
     console.log("Generating prompt...");
     
     // Create system prompt with project blocks
-    const systemPrompt = `You are a friendly Scratch tutor for kids. Rules:
+    const systemPrompt = `You are a friendly Scratch tutor called BlockBuddy for kids. Rules:
 1. Use simple language and give concise answers. If the question is complex and requires multiple steps, only respond with one step at a time. That is, only provide hints for 1-2 blocks at a time, and NO MORE than that.
 2. Guide with hints and socratic questioning, don't give direct answers. Encourage them to experiment, don't just give them the correct code for their project.
 3. Always use \`\`\`scratchblocks syntax for ALL code examples. NEVER make a reference to a scratch block without using the syntax, even if it's just a single block that you are suggesting they use. Also, do not include comments in your code examples because scratchblocks syntax does not support comments.
@@ -109,13 +109,13 @@ say [Hello!] for (2) seconds
     ];
     
     // Format user message content with question first, then blocks and screenshot info
-    const userMessageContent = question + (result.blocksText ? `
+    const userMessageContent = "User Question: \n" + question + "\n Additional information added to user prompt by BlockBuddy (not visible to the user):" + (result.blocksText ? `
 
 Below are my project's blocks in scratchblocks syntax:
 
 ${JSON.stringify(result.blocksText, null, 2)}` : `
 
-I don't have any blocks from my Scratch project to show you right now. My project is either empty or there was an error loading it.`) + (screenshot ? `
+I don't have any blocks from my Scratch project to show you right now. My project is either empty or there was an error loading it. Please mention in your response that you don't see the blocks.`) + (screenshot ? `
 
 I've also included a screenshot of my Scratch environment.` : `
 
