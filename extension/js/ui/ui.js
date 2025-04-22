@@ -233,7 +233,7 @@ window.BlockBuddy.UI.createUI = function() {
         <!-- Header with title and buttons -->
         <div id="panel-header">
           <button class="close-button">×</button>
-          <button id="clearChatButton" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; padding: 0.375rem 0.75rem; border-radius: 1rem; margin-left: auto; transition: background-color 0.2s ease;">
+          <button id="clearChatButton" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; padding: 0.375rem 0.75rem; border-radius: 1rem; margin-left: auto; transition: background-color 0.2s ease, transform 0.2s ease;">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.25rem;">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -297,7 +297,7 @@ window.BlockBuddy.UI.createUI = function() {
                 <span id="screenshotToggleCircle" style="position: absolute; content: ''; height: 0.875rem; width: 0.875rem; left: 0.125rem; bottom: 0.125rem; background-color: white; transition: 0.4s; border-radius: 50%;"></span>
               </span>
             </label>
-            <span style="font-size: 0.75rem; color: #575e75; user-select: none;">Include Screenshot</span>
+            <span style="font-size: 0.75rem; color: #575e75; user-select: none;">Share Screen</span>
           </div>
           
           <!-- Audio Generation toggle -->
@@ -695,6 +695,17 @@ window.BlockBuddy.UI.createUI = function() {
     
     userInputEl.addEventListener('blur', () => {
       shadow.getElementById("inputContainer").classList.remove('focused');
+    });
+    
+    // Add hover effects to the Clear Chat button
+    clearChatButtonEl.addEventListener('mouseenter', () => {
+      clearChatButtonEl.style.background = 'rgba(255, 255, 255, 0.3)';
+      clearChatButtonEl.style.transform = 'scale(1.05)';
+    });
+    
+    clearChatButtonEl.addEventListener('mouseleave', () => {
+      clearChatButtonEl.style.background = 'rgba(255, 255, 255, 0.2)';
+      clearChatButtonEl.style.transform = 'scale(1)';
     });
     
     // Get stored position and size from localStorage and apply them
