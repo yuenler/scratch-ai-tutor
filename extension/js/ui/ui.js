@@ -188,7 +188,7 @@ window.BlockBuddy.UI.showPanel = function(panel, minimizedButton) {
   if (panelPosition) {
     // If saved dimensions exceed screen size, use percentage-based fallbacks
     const maxWidth = window.innerWidth * 0.4;
-    const maxHeight = window.innerHeight * 0.75;
+    const maxHeight = window.innerHeight * 0.8;
     
     panel.style.width = (panelPosition.width > window.innerWidth) ? maxWidth + "px" : panelPosition.width + "px";
     panel.style.height = (panelPosition.height > window.innerHeight) ? maxHeight + "px" : panelPosition.height + "px";
