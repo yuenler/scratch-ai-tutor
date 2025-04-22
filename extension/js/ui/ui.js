@@ -663,13 +663,14 @@ window.BlockBuddy.UI.createUI = function() {
         if (panelWidth > windowWidth * 0.5) {
           panel.style.width = '40vw';
         }
-        
-        // Save the updated panel position
-        window.BlockBuddy.Storage.savePanelPosition({
-          snapEdges: window.BlockBuddy.UI.getSnapEdges(panel, 'panel'),
-          width: panel.offsetWidth,
-          height: panel.offsetHeight
-        });
+        // add small delay to allow the panel to resize
+        setTimeout(() => {
+          window.BlockBuddy.Storage.savePanelPosition({
+            snapEdges: window.BlockBuddy.UI.getSnapEdges(panel, 'panel'),
+            width: panel.offsetWidth,
+            height: panel.offsetHeight
+          });
+        }, 100);
       }
     });
     
