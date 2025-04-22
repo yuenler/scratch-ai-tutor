@@ -255,7 +255,7 @@ window.BlockBuddy.UI.createUI = function() {
         <div id="inputContainer" style="display: flex; padding: 0.625rem; border-top: 0.0625rem solid #ddd;">
           <textarea id="userInput" style="flex: 1; border: 0.0625rem solid #ddd; border-radius: 1.125rem; padding: 0.625rem 0.9375rem; font-size: 0.875rem; resize: none; outline: none; max-height: 6.25rem; overflow-y: auto; cursor: text;" placeholder="Ask a question..."></textarea>
           
-          <button class="send-button" style="background: #4c97ff; color: white; border: none; border-radius: 50%; width: 2.25rem; height: 2.25rem; margin-left: 0.625rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+          <button class="send-button" disabled style="background: #cccccc; color: white; border: none; border-radius: 50%; width: 2.25rem; height: 2.25rem; margin-left: 0.625rem; cursor: default; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="white"/>
             </svg>
@@ -383,6 +383,28 @@ window.BlockBuddy.UI.createUI = function() {
       audioGenerationToggleCircle.style.transform = 'translateX(1rem)';
       audioGenerationToggleSlider.style.backgroundColor = '#4c97ff';
     }
+
+    // Function to update the send button state
+    const updateSendButtonState = () => {
+      if (userInputEl.value.trim() === '' || window.BlockBuddy.isWaitingForResponse) {
+        sendButtonEl.disabled = true;
+        sendButtonEl.style.background = '#cccccc';
+        sendButtonEl.style.cursor = 'default';
+      } else {
+        sendButtonEl.disabled = false;
+        sendButtonEl.style.background = '#4c97ff';
+        sendButtonEl.style.cursor = 'pointer';
+      }
+    };
+    
+    // Initialize a global flag for tracking response state
+    window.BlockBuddy.isWaitingForResponse = false;
+    
+    // Input event listener to toggle button state
+    userInputEl.addEventListener('input', updateSendButtonState);
+    
+    // Initial button state update
+    updateSendButtonState();
     
     // Model toggle event listener
     modelToggleInput.addEventListener('change', function() {
@@ -719,6 +741,22 @@ window.BlockBuddy.UI.createUI = function() {
     // Load positions
     loadPanelPosition();
     loadMinimizedButtonPosition();
+    
+    // Send message on button click
+    sendButtonEl.addEventListener("click", function() {
+      const userMessage = userInputEl.value.trim();
+      if (userMessage && !window.BlockBuddy.isWaitingForResponse) {
+        // Set waiting flag to true
+        window.BlockBuddy.isWaitingForResponse = true;
+        updateSendButtonState();
+        
+        // Clear input
+        userInputEl.value = "";
+        
+        // Send message logic...
+        window.BlockBuddy.API.sendMessage(userMessage, chatBodyEl, shadow, systemMessageEl, showThinkingMode);
+      }
+    });
     
     // Return the created UI elements
     return {

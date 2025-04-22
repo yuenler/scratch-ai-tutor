@@ -113,8 +113,25 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
 
     // Function to send a question
     function sendQuestion() {
+      // Get the user input
       const question = userInputEl.value.trim();
-      if (!question) return;
+      
+      // Check if input is empty or already waiting for a response
+      if (!question || window.BlockBuddy.isWaitingForResponse) {
+        return;
+      }
+      
+      // Set waiting flag to true
+      window.BlockBuddy.isWaitingForResponse = true;
+      
+      // Update send button state
+      const sendButtonEl = shadow.querySelector(".send-button");
+      sendButtonEl.disabled = true;
+      sendButtonEl.style.background = '#cccccc';
+      sendButtonEl.style.cursor = 'default';
+      
+      // Clear the input field
+      userInputEl.value = "";
       
       // Try to autosave the project first
       const saveButton = document.querySelector('div.save-status_save-now_c2ybV');
@@ -336,6 +353,24 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
             const autoplayEnabled = window.BlockBuddy.Storage.getAutoplayPreference();
             generateTTSForResponse(fullResponse, messageElement, messageId, autoplayEnabled);
             
+            // Reset waiting flag and update send button state
+            window.BlockBuddy.isWaitingForResponse = false;
+            const updateSendButtonState = function() {
+              const userInputEl = shadow.getElementById("userInput");
+              const sendButtonEl = shadow.querySelector(".send-button");
+              
+              if (userInputEl.value.trim() === '' || window.BlockBuddy.isWaitingForResponse) {
+                sendButtonEl.disabled = true;
+                sendButtonEl.style.background = '#cccccc';
+                sendButtonEl.style.cursor = 'default';
+              } else {
+                sendButtonEl.disabled = false;
+                sendButtonEl.style.background = '#4c97ff';
+                sendButtonEl.style.cursor = 'pointer';
+              }
+            };
+            updateSendButtonState();
+            
             // Scroll to bottom one final time
             chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
           }, 500); // Small delay to ensure DOM updates before processing
@@ -343,6 +378,23 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         (error) => {
           // Remove thinking indicator
           thinkingIndicator.remove();
+          // Reset waiting flag and update send button state
+          window.BlockBuddy.isWaitingForResponse = false;
+          const updateSendButtonState = function() {
+            const userInputEl = shadow.getElementById("userInput");
+            const sendButtonEl = shadow.querySelector(".send-button");
+            
+            if (userInputEl.value.trim() === '' || window.BlockBuddy.isWaitingForResponse) {
+              sendButtonEl.disabled = true;
+              sendButtonEl.style.background = '#cccccc';
+              sendButtonEl.style.cursor = 'default';
+            } else {
+              sendButtonEl.disabled = false;
+              sendButtonEl.style.background = '#4c97ff';
+              sendButtonEl.style.cursor = 'pointer';
+            }
+          };
+          updateSendButtonState();
           // Add error message
           console.error("Error sending question to API:", error);
           if (error.includes("Failed to get token")) {
@@ -629,7 +681,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       // Always stop propagation of keyboard events to prevent Scratch IDE from capturing them
       e.stopPropagation();
       
-      if (e.key === "Enter" && !e.shiftKey) {
+      if (e.key === "Enter" && !e.shiftKey && !window.BlockBuddy.isWaitingForResponse) {
         e.preventDefault();
         sendQuestion();
       }
