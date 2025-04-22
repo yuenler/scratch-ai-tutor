@@ -184,10 +184,11 @@
   animation: fadeIn 0.5s ease;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   transition: all 0.2s ease;
+  font-size: 14px;
 }
 
 .message-content:hover {
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .user-message .message-content {
@@ -202,28 +203,29 @@
   border-bottom-left-radius: 4px;
 }
 
-/* Styles for scratchblocks */
+/* Styling for scratch blocks */
 pre.blocks {
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  padding: 10px;
-  margin: 10px 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 5px 0;
   overflow-x: auto;
-  white-space: pre-wrap;
 }
 
-pre.blocks svg {
+/* Additional scaling and responsiveness for scratch blocks */
+.scratch-blocks-svg {
   max-width: 100%;
   height: auto;
-  transform: scale(0.85);
   transform-origin: left top;
+  margin: 0;
+  display: block;
 }
 
-pre.render-error {
-  background-color: #fff0f0;
-  border-left: 3px solid #ff6b6b;
-  padding: 10px;
-  font-family: monospace;
+/* For smaller screens, scale blocks even more */
+@media (max-width: 768px) {
+  .scratch-blocks-svg {
+    transform: scale(0.9);
+  }
 }
 
 .thinking-indicator {
@@ -247,7 +249,6 @@ pre.render-error {
 .thinking-dots {
   display: flex;
   margin-left: 5px;
-  margin-top: 8px;
 }
 
 .dot {

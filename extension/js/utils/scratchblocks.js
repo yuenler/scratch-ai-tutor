@@ -478,8 +478,12 @@ svg.scratchblocks-style-scratch3-high-contrast .sb3-literal-string {
         languages: ['en']
       });
       const svg = scratchblocks.render(doc, {
-        style: 'scratch3'
+        style: 'scratch3',
+        scale: 0.7 // Scale blocks down to 70%
       });
+      
+      // Add a class for additional styling control
+      svg.classList.add('scratch-blocks-svg');
       
       // Add the SVG to the pre element
       pre.appendChild(svg);

@@ -1089,7 +1089,8 @@ window.BlockBuddy.UI.showThinkingIndicator = function(chatBody) {
     <div class="thinking-icon">
       <img src="${chrome.runtime.getURL("images/icon32.png")}" style="width: 24px; height: 24px; border-radius: 50%;">
     </div>
-    <div>Thinking<div class="thinking-dots">
+    <div>
+    <div class="thinking-dots">
       <div class="dot"></div>
       <div class="dot"></div>
       <div class="dot"></div>
