@@ -249,8 +249,8 @@ window.BlockBuddy.UI.createUI = function() {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      width: 550px;
-      height: 750px;
+      width: 40%;
+      height: 85%;
       background-color: white;
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -386,7 +386,7 @@ window.BlockBuddy.UI.createUI = function() {
       flex: 1;
       overflow-y: auto;
       padding: 10px 15px;
-      min-height: 400px;
+      height: 60%
     }
     
     .message {
@@ -986,8 +986,8 @@ window.BlockBuddy.UI.createUI = function() {
   panel.style.left = "initial";
   panel.style.bottom = "20px";
   panel.style.right = "20px";
-  panel.style.width = "550px";
-  panel.style.height = "750px";
+  panel.style.height = "85%";
+  panel.style.width = "40%";
   panel.style.background = "white";
   panel.style.borderRadius = "10px";
   panel.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
@@ -1158,7 +1158,7 @@ modelToggleInput.addEventListener('change', function() {
   chatBody.style.flex = "1";
   chatBody.style.overflowY = "auto";
   chatBody.style.padding = "10px 15px";
-  chatBody.style.minHeight = "400px";
+  chatBody.style.height = "60%";
   panel.appendChild(chatBody);
 
   // Create input container
