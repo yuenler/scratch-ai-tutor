@@ -586,13 +586,17 @@ window.BlockBuddy.UI.createUI = function() {
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
         
-        const minWidth = 200;
+        const minWidth = 500;
         const minHeight = 300;
         
         let newWidth = originalWidth;
         let newHeight = originalHeight;
         let newX = originalX;
         let newY = originalY;
+        
+        // Get current viewport dimensions
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
         
         if (currentResizeHandle.includes('e')) {
           newWidth = Math.max(minWidth, originalWidth + dx);
@@ -613,6 +617,16 @@ window.BlockBuddy.UI.createUI = function() {
             newY = originalY + originalHeight - possibleHeight;
             newHeight = possibleHeight;
           }
+        }
+
+        // if the height is more than 0.9 of the viewport height, set to 0.9
+        if (newHeight > 0.9 * viewportHeight) {
+          newHeight = 0.9 * viewportHeight;
+        }
+        
+        // if the width is more than 0.9 of the viewport width, set to 0.9
+        if (newWidth > 0.9 * viewportWidth) {
+          newWidth = 0.9 * viewportWidth;
         }
         
         panel.style.width = newWidth + 'px';
