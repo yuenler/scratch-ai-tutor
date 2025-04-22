@@ -210,822 +210,503 @@ window.BlockBuddy.UI.showPanel = function(panel, minimizedButton) {
  * @returns {Object} - UI elements
  */
 window.BlockBuddy.UI.createUI = function() {
-  // Create container and attach a shadow DOM
-  const container = document.createElement("div");
-  container.id = "scratch-ai-tutor-container";
-  const shadow = container.attachShadow({ mode: "open" });
-
-  // Remove Font Awesome loading as it won't work with shadow DOM
+    const container = document.createElement("div");
+    container.id = "scratch-ai-tutor-container";
+    const shadow = container.attachShadow({ mode: "open" });
   
-  // Load scratchblocks library if not already loaded
-  if (typeof window.scratchblocks === 'undefined') {
-    console.log("Loading scratchblocks library...");
-    const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('js/libs/scratchblocks-v3.6-min.js');
-    document.head.appendChild(script);
+    // Create HTML structure with inline CSS
+    shadow.innerHTML = `
+      <link rel="stylesheet" href="${chrome.runtime.getURL('css/styles.css')}">
+      
+      <div id="scratch-ai-tutor-panel" style="position: fixed; z-index: 9999; top: initial; left: initial; bottom: 1.25rem; right: 1.25rem; height: 85%; width: 40%; background: white; border-radius: 0.625rem; box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15); display: flex; flex-direction: column; font-family: Helvetica Neue, Helvetica, Arial, sans-serif; border: 0.0625rem solid #ddd; overflow: hidden; resize: both;">
+        
+        <!-- Resize handles -->
+        <div id="resize-handle-e"></div>
+        <div id="resize-handle-w"></div>
+        <div id="resize-handle-n"></div>
+        <div id="resize-handle-s"></div>
+        <div id="resize-handle-ne"></div>
+        <div id="resize-handle-nw"></div>
+        <div id="resize-handle-se"></div>
+        <div id="resize-handle-sw"></div>
+        
+        <!-- Header with title and buttons -->
+        <div id="panel-header">
+          <button class="close-button">×</button>
+          <button id="clearChatButton" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; padding: 0.375rem 0.75rem; border-radius: 1rem; margin-left: auto; transition: background-color 0.2s ease;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.25rem;">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Clear Chat
+          </button>
+        </div>
+        
+        <!-- System message -->
+        <div id="systemMessage" style="padding: 0.625rem 0.9375rem; background: #f7f7f7; border-bottom: 0.0625rem solid #ddd; font-size: 0.875rem; color: #666;">
+          Hello! I'm here to help with your Scratch project. Make sure your project is shared so I can see it.
+        </div>
+        
+        <!-- Chat body -->
+        <div id="chatBody" style="flex: 1; overflow-y: auto; padding: 0.625rem 0.9375rem; height: 60%;">
+        </div>
+        
+        <!-- Input container -->
+        <div id="inputContainer" style="display: flex; padding: 0.625rem; border-top: 0.0625rem solid #ddd;">
+          <textarea id="userInput" style="flex: 1; border: 0.0625rem solid #ddd; border-radius: 1.125rem; padding: 0.625rem 0.9375rem; font-size: 0.875rem; resize: none; outline: none; max-height: 6.25rem; overflow-y: auto; cursor: text;" placeholder="Ask a question..."></textarea>
+          
+          <button class="send-button" style="background: #4c97ff; color: white; border: none; border-radius: 50%; width: 2.25rem; height: 2.25rem; margin-left: 0.625rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="white"/>
+            </svg>
+          </button>
+          
+          <button id="voiceRecordButton" style="background: #a83232; color: white; border: none; border-radius: 50%; width: 2.25rem; height: 2.25rem; margin-left: 0.625rem; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative;">
+            <svg class="microphone-icon" fill="white" width="18" height="18" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 512 512">
+              <g>
+                <g>
+                  <path d="m439.5,236c0-11.3-9.1-20.4-20.4-20.4s-20.4,9.1-20.4,20.4c0,70-64,126.9-142.7,126.9-78.7,0-142.7-56.9-142.7-126.9 0-11.3-9.1-20.4-20.4-20.4s-20.4,9.1-20.4,20.4c0,86.2 71.5,157.4 163.1,166.7v57.5h-23.6c-11.3,0-20.4,9.1-20.4,20.4 0,11.3 9.1,20.4 20.4,20.4h88c11.3,0 20.4-9.1 20.4-20.4 0-11.3-9.1-20.4-20.4-20.4h-23.6v-57.5c91.6-9.3 163.1-80.5 163.1-166.7z"/>
+                  <path d="m256,323.5c51,0 92.3-41.3 92.3-92.3v-127.9c0-51-41.3-92.3-92.3-92.3s-92.3,41.3-92.3,92.3v127.9c0,51 41.3,92.3 92.3,92.3zm-52.3-220.2c0-28.8 23.5-52.3 52.3-52.3s52.3,23.5 52.3,52.3v127.9c0,28.8-23.5,52.3-52.3,52.3s-52.3-23.5-52.3-52.3v-127.9z"/>
+                </g>
+              </g>
+            </svg>
+            <div class="stop-icon"></div>
+            <div id="recordingIndicator" style="display: none; position: absolute; bottom: -1.5625rem; left: 50%; transform: translateX(-50%); background: rgba(255, 76, 76, 0.8); color: white; padding: 0.1875rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; white-space: nowrap;">Recording...</div>
+          </button>
+        </div>
+        
+        <!-- Toggles container -->
+        <div id="modelToggleOuterContainer" style="display: flex; justify-content: center; gap: 2.5rem; align-items: center; padding: 0.5rem 0.625rem; border-top: 0.0625rem solid #eee;">
+          
+          <!-- Thinking Mode toggle -->
+          <div class="toggle-switch-container" style="display: flex; align-items: center; gap: 0.5rem;">
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 2.25rem; height: 1.25rem;">
+              <input id="modelToggleInput" type="checkbox" style="opacity: 0; width: 0; height: 0;">
+              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; transition: .4s; border-radius: 1.25rem; background-color: #ccc;">
+                <span id="modelToggleCircle" style="position: absolute; content: ''; height: 1rem; width: 1rem; left: 0.125rem; bottom: 0.125rem; background-color: white; transition: .4s; border-radius: 50%;"></span>
+              </span>
+            </label>
+            <span style="font-size: 0.75rem; color: #575e75; user-select: none;">Thinking Mode</span>
+          </div>
+          
+          <!-- Screenshot toggle -->
+          <div id="screenshotToggleContainer" style="display: flex; align-items: center; gap: 0.375rem;">
+            <label style="position: relative; display: inline-block; width: 2.125rem; height: 1.125rem; margin: 0;">
+              <input id="screenshotToggleInput" type="checkbox" style="opacity: 0; width: 0; height: 0;">
+              <span id="screenshotToggleSlider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; transition: 0.4s; border-radius: 2.125rem; background-color: #ccc;">
+                <span id="screenshotToggleCircle" style="position: absolute; content: ''; height: 0.875rem; width: 0.875rem; left: 0.125rem; bottom: 0.125rem; background-color: white; transition: 0.4s; border-radius: 50%;"></span>
+              </span>
+            </label>
+            <span style="font-size: 0.75rem; color: #575e75; user-select: none;">Include Screenshot</span>
+          </div>
+          
+          <!-- Audio Generation toggle -->
+          <div style="display: flex; align-items: center; gap: 0.375rem;">
+            <label style="position: relative; display: inline-block; width: 2.125rem; height: 1.125rem; margin: 0;">
+              <input id="audioGenerationToggleInput" type="checkbox" style="opacity: 0; width: 0; height: 0;">
+              <span id="audioGenerationToggleSlider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; transition: 0.4s; border-radius: 2.125rem; background-color: #ccc;">
+                <span id="audioGenerationToggleCircle" style="position: absolute; content: ''; height: 0.875rem; width: 0.875rem; left: 0.125rem; bottom: 0.125rem; background-color: white; transition: 0.4s; border-radius: 50%;"></span>
+              </span>
+            </label>
+            <span style="font-size: 0.75rem; color: #575e75; user-select: none;">Generate Audio</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Minimized button -->
+      <div id="minimizedButton" style="position: fixed; bottom: 5rem; right: 1.25rem; width: 3.75rem; height: 3.75rem; background: #4c97ff; border-radius: 0.75rem; box-shadow: 0 0.3125rem 0.9375rem rgba(76, 151, 255, 0.4); display: none; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; z-index: 9999; transition: all 0.3s ease; overflow: hidden; border: none;">
+        <div class="drag-handle" id="drag-handle" style="width: 100%; height: 25%; display: flex; justify-content: center; align-items: center; background-color: rgba(0, 0, 0, 0.2); cursor: move; border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem;">
+          <div style="width: 1.875rem; height: 0.25rem; background-color: white; border-radius: 0.125rem;"></div>
+        </div>
+        <div class="click-area" id="click-area" style="width: 100%; height: 75%; display: flex; justify-content: center; align-items: center; background-color: transparent; cursor: pointer;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+          </svg>
+        </div>
+      </div>
+    `;
     
-    script.onload = function() {
-      console.log("Scratchblocks library loaded successfully");
-    };
-    
-    script.onerror = function() {
-      console.error("Failed to load scratchblocks library");
-    };
-  }
-
-  // Add styles to shadow DOM
-  const style = document.createElement('link');
-  style.rel = 'stylesheet';
-  style.href = chrome.runtime.getURL('css/styles.css');
-  shadow.appendChild(style);
-
-  // Create panel
-  const panel = document.createElement("div");
-  panel.id = "scratch-ai-tutor-panel";
-  shadow.appendChild(panel);
-  panel.style.position = "fixed";
-  panel.style.zIndex = "9999";
-  panel.style.top = "initial";
-  panel.style.left = "initial";
-  panel.style.bottom = "20px";
-  panel.style.right = "20px";
-  panel.style.height = "85%";
-  panel.style.width = "40%";
-  panel.style.background = "white";
-  panel.style.borderRadius = "10px";
-  panel.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
-  panel.style.display = "flex";
-  panel.style.flexDirection = "column";
-  panel.style.fontFamily = "Helvetica Neue, Helvetica, Arial, sans-serif";
-  panel.style.border = "1px solid #ddd";
-  panel.style.overflow = "hidden";
-  panel.style.resize = "both";
-  
-  // Create resize handles
-  const directions = ['e', 'w', 'n', 's', 'ne', 'nw', 'se', 'sw'];
-  directions.forEach(dir => {
-    const handle = document.createElement('div');
-    handle.id = `resize-handle-${dir}`;
-    panel.appendChild(handle);
-  });
-
-  // Create header with title and close button
-  const header = document.createElement("div");
-  header.id = "panel-header";
-  panel.appendChild(header);
-
-  // Create a close button
-  const closeButton = document.createElement("button");
-  closeButton.className = "close-button";
-  closeButton.textContent = "×";
-  header.appendChild(closeButton);
-
-  // Create a clear chat button
-  const clearChatButton = document.createElement("button");
-  clearChatButton.id = "clearChatButton";
-  clearChatButton.style.background = "rgba(255, 255, 255, 0.2)";
-  clearChatButton.style.border = "none";
-  clearChatButton.style.color = "white";
-  clearChatButton.style.fontSize = "14px";
-  clearChatButton.style.cursor = "pointer";
-  clearChatButton.style.display = "flex";
-  clearChatButton.style.alignItems = "center";
-  clearChatButton.style.padding = "6px 12px";
-  clearChatButton.style.borderRadius = "16px";
-  clearChatButton.style.marginLeft = "auto";
-  clearChatButton.style.transition = "background-color 0.2s ease";
-  clearChatButton.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
-      <polyline points="3 6 5 6 21 6"></polyline>
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-    </svg>
-    Clear Chat
-  `;
-  header.appendChild(clearChatButton);
-
-  // Create system message
-  const systemMessage = document.createElement("div");
-  systemMessage.id = "systemMessage";
-  systemMessage.style.padding = "10px 15px";
-  systemMessage.style.background = "#f7f7f7";
-  systemMessage.style.borderBottom = "1px solid #ddd";
-  systemMessage.style.fontSize = "14px";
-  systemMessage.style.color = "#666";
-  systemMessage.textContent = "Hello! I'm here to help with your Scratch project. Make sure your project is shared so I can see it.";
-  panel.appendChild(systemMessage);
-
-  // Create model selection toggle container
-  const modelToggleContainer = document.createElement('div');
-  modelToggleContainer.className = 'toggle-switch-container';
-  modelToggleContainer.style.display = 'flex';
-  modelToggleContainer.style.alignItems = 'center';
-  modelToggleContainer.style.gap = '8px';
-  
-  // Create the model toggle switch
-  const modelToggleSwitch = document.createElement('label');
-  modelToggleSwitch.className = 'toggle-switch';
-  modelToggleSwitch.style.position = 'relative';
-  modelToggleSwitch.style.display = 'inline-block';
-  modelToggleSwitch.style.width = '36px';
-  modelToggleSwitch.style.height = '20px';
-  
-  const modelToggleInput = document.createElement('input');
-  modelToggleInput.type = 'checkbox';
-  modelToggleInput.checked = window.BlockBuddy.Storage.getModelPreference() || false;
-  modelToggleInput.style.opacity = '0';
-  modelToggleInput.style.width = '0';
-  modelToggleInput.style.height = '0';
-  
-  const modelToggleSlider = document.createElement('span');
-  modelToggleSlider.className = 'toggle-slider';
-  modelToggleSlider.style.position = 'absolute';
-  modelToggleSlider.style.cursor = 'pointer';
-  modelToggleSlider.style.top = '0';
-  modelToggleSlider.style.left = '0';
-  modelToggleSlider.style.right = '0';
-  modelToggleSlider.style.bottom = '0';
-  modelToggleSlider.style.transition = '.4s';
-  modelToggleSlider.style.borderRadius = '20px';
-  
-  // Create the slider circle
-  const modelToggleCircle = document.createElement('span');
-  modelToggleCircle.style.position = 'absolute';
-  modelToggleCircle.style.content = '""';
-  modelToggleCircle.style.height = '16px';
-  modelToggleCircle.style.width = '16px';
-  modelToggleCircle.style.left = '2px';
-  modelToggleCircle.style.bottom = '2px';
-  modelToggleCircle.style.backgroundColor = 'white';
-  modelToggleCircle.style.transition = '.4s';
-  modelToggleCircle.style.borderRadius = '50%';
-  modelToggleCircle.style.transform = modelToggleInput.checked ? 'translateX(16px)' : 'none';
-  
-  modelToggleSlider.appendChild(modelToggleCircle);
-  modelToggleSwitch.appendChild(modelToggleInput);
-  modelToggleSwitch.appendChild(modelToggleSlider);
-  
-  // Create the label for the model toggle
-  const modelToggleLabel = document.createElement('span');
-  modelToggleLabel.textContent = 'Thinking Mode';
-  modelToggleLabel.style.fontSize = '12px';
-  modelToggleLabel.style.color = '#575e75';
-  modelToggleLabel.style.userSelect = 'none';
-  
-  modelToggleContainer.appendChild(modelToggleSwitch);
-  modelToggleContainer.appendChild(modelToggleLabel);
-  
-  // Add event listener to save preference
-modelToggleInput.addEventListener('change', function() {
-  const isChecked = this.checked;
-  
-  // Update the toggle appearance
-  modelToggleSlider.style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
-  modelToggleCircle.style.transform = isChecked ? 'translateX(16px)' : 'none';
-  
-  // Save the preference
-  window.BlockBuddy.Storage.setModelPreference(isChecked);
-  console.log(`Model preference changed to: ${isChecked ? 'thinking (o4-mini)' : 'non-thinking (4o-mini)'}`);
-  
-  // If thinking mode is enabled, disable screenshot toggle
-  if (isChecked) {
-    // Turn off screenshot toggle
-    screenshotToggleInput.checked = false;
-    window.BlockBuddy.Storage.setScreenshotPreference(false);
-    screenshotToggleSlider.style.backgroundColor = '#ccc';
-    screenshotToggleCircle.style.transform = 'none';
-    
-    // Disable screenshot toggle
-    screenshotToggleInput.disabled = true;
-    screenshotToggleSlider.style.opacity = '0.5';
-    screenshotToggleSlider.style.cursor = 'not-allowed';
-    screenshotToggleLabel.style.opacity = '0.5';
-    
-    // Add tooltip to show explanation
-    screenshotToggleContainer.title = "Screenshot feature is disabled in Thinking Mode - the thinking model doesn't support image input";
-  } else {
-    // Re-enable screenshot toggle
-    screenshotToggleInput.disabled = false;
-    screenshotToggleSlider.style.opacity = '1';
-    screenshotToggleSlider.style.cursor = 'pointer';
-    screenshotToggleLabel.style.opacity = '1';
-    
-    // Remove tooltip
-    screenshotToggleContainer.title = "";
-  }
-});
-  
-  // Create chat body
-  const chatBody = document.createElement("div");
-  chatBody.id = "chatBody";
-  chatBody.style.flex = "1";
-  chatBody.style.overflowY = "auto";
-  chatBody.style.padding = "10px 15px";
-  chatBody.style.height = "60%";
-  panel.appendChild(chatBody);
-
-  // Create input container
-  const inputContainer = document.createElement("div");
-  inputContainer.id = "inputContainer";
-  inputContainer.style.display = "flex";
-  inputContainer.style.padding = "10px";
-  inputContainer.style.borderTop = "1px solid #ddd";
-  panel.appendChild(inputContainer);
-
-  // Create user input
-  const userInput = document.createElement("textarea");
-  userInput.id = "userInput";
-  userInput.style.flex = "1";
-  userInput.style.border = "1px solid #ddd";
-  userInput.style.borderRadius = "18px";
-  userInput.style.padding = "10px 15px";
-  userInput.style.fontSize = "14px";
-  userInput.style.resize = "none";
-  userInput.style.outline = "none";
-  userInput.style.maxHeight = "100px";
-  userInput.style.overflowY = "auto";
-  userInput.style.cursor = "text";
-  userInput.placeholder = "Ask a question...";
-  inputContainer.appendChild(userInput);
-
-  // Create send button
-  const sendButton = document.createElement("button");
-  sendButton.className = "send-button";
-  sendButton.style.background = "#4c97ff";
-  sendButton.style.color = "white";
-  sendButton.style.border = "none";
-  sendButton.style.borderRadius = "50%";
-  sendButton.style.width = "36px";
-  sendButton.style.height = "36px";
-  sendButton.style.marginLeft = "10px";
-  sendButton.style.cursor = "pointer";
-  sendButton.style.display = "flex";
-  sendButton.style.alignItems = "center";
-  sendButton.style.justifyContent = "center";
-  sendButton.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="white"/>
-    </svg>
-  `;
-  inputContainer.appendChild(sendButton);
-
-  // Create voice record button
-  const voiceRecordButton = document.createElement("button");
-  voiceRecordButton.id = "voiceRecordButton";
-  voiceRecordButton.style.background = "#a83232";
-  voiceRecordButton.style.color = "white";
-  voiceRecordButton.style.border = "none";
-  voiceRecordButton.style.borderRadius = "50%";
-  voiceRecordButton.style.width = "36px";
-  voiceRecordButton.style.height = "36px";
-  voiceRecordButton.style.marginLeft = "10px";
-  voiceRecordButton.style.cursor = "pointer";
-  voiceRecordButton.style.display = "flex";
-  voiceRecordButton.style.alignItems = "center";
-  voiceRecordButton.style.justifyContent = "center";
-  voiceRecordButton.style.position = "relative";
-  voiceRecordButton.innerHTML = `
-    <svg class="microphone-icon" fill="white" width="18" height="18" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 512 512">
-      <g>
-        <g>
-          <path d="m439.5,236c0-11.3-9.1-20.4-20.4-20.4s-20.4,9.1-20.4,20.4c0,70-64,126.9-142.7,126.9-78.7,0-142.7-56.9-142.7-126.9 0-11.3-9.1-20.4-20.4-20.4s-20.4,9.1-20.4,20.4c0,86.2 71.5,157.4 163.1,166.7v57.5h-23.6c-11.3,0-20.4,9.1-20.4,20.4 0,11.3 9.1,20.4 20.4,20.4h88c11.3,0 20.4-9.1 20.4-20.4 0-11.3-9.1-20.4-20.4-20.4h-23.6v-57.5c91.6-9.3 163.1-80.5 163.1-166.7z"/>
-          <path d="m256,323.5c51,0 92.3-41.3 92.3-92.3v-127.9c0-51-41.3-92.3-92.3-92.3s-92.3,41.3-92.3,92.3v127.9c0,51 41.3,92.3 92.3,92.3zm-52.3-220.2c0-28.8 23.5-52.3 52.3-52.3s52.3,23.5 52.3,52.3v127.9c0,28.8-23.5,52.3-52.3,52.3s-52.3-23.5-52.3-52.3v-127.9z"/>
-        </g>
-      </g>
-    </svg>
-    <div class="stop-icon"></div>
-  `;
-  inputContainer.appendChild(voiceRecordButton);
-
-  // Create recording indicator
-  const recordingIndicator = document.createElement("div");
-  recordingIndicator.id = "recordingIndicator";
-  recordingIndicator.style.display = "none";
-  recordingIndicator.style.position = "absolute";
-  recordingIndicator.style.bottom = "-25px";
-  recordingIndicator.style.left = "50%";
-  recordingIndicator.style.transform = "translateX(-50%)";
-  recordingIndicator.style.background = "rgba(255, 76, 76, 0.8)";
-  recordingIndicator.style.color = "white";
-  recordingIndicator.style.padding = "3px 8px";
-  recordingIndicator.style.borderRadius = "4px";
-  recordingIndicator.style.fontSize = "12px";
-  recordingIndicator.style.whiteSpace = "nowrap";
-  recordingIndicator.textContent = "Recording...";
-  voiceRecordButton.appendChild(recordingIndicator);
-
-  // Create model toggle container below the input area
-  const modelToggleOuterContainer = document.createElement('div');
-  modelToggleOuterContainer.id = "modelToggleOuterContainer";
-  modelToggleOuterContainer.style.display = "flex";
-  modelToggleOuterContainer.style.justifyContent = "center";
-  modelToggleOuterContainer.style.gap = "40px";
-  modelToggleOuterContainer.style.alignItems = "center";
-  modelToggleOuterContainer.style.padding = "8px 10px";
-  modelToggleOuterContainer.style.borderTop = "1px solid #eee";
-  panel.appendChild(modelToggleOuterContainer);
-  
-  // Add the model toggle to the container below the input area
-  modelToggleOuterContainer.appendChild(modelToggleContainer);
-  
-  // Create screenshot toggle container
-  const screenshotToggleContainer = document.createElement('div');
-  screenshotToggleContainer.style.display = 'flex';
-  screenshotToggleContainer.style.alignItems = 'center';
-  screenshotToggleContainer.style.gap = '6px';
-  
-  // Create screenshot toggle switch
-  const screenshotToggleSwitch = document.createElement('label');
-  screenshotToggleSwitch.style.position = 'relative';
-  screenshotToggleSwitch.style.display = 'inline-block';
-  screenshotToggleSwitch.style.width = '34px';
-  screenshotToggleSwitch.style.height = '18px';
-  screenshotToggleSwitch.style.margin = '0';
-  
-  // Create input for toggle
-  const screenshotToggleInput = document.createElement('input');
-  screenshotToggleInput.id = 'screenshotToggleInput';
-  screenshotToggleInput.type = 'checkbox';
-  screenshotToggleInput.style.opacity = '0';
-  screenshotToggleInput.style.width = '0';
-  screenshotToggleInput.style.height = '0';
-  
-  // Check local storage for preference and set initial state
-  screenshotToggleInput.checked = window.BlockBuddy.Storage.getScreenshotPreference();
-  
-  // Create slider
-  const screenshotToggleSlider = document.createElement('span');
-  screenshotToggleSlider.style.position = 'absolute';
-  screenshotToggleSlider.style.cursor = 'pointer';
-  screenshotToggleSlider.style.top = '0';
-  screenshotToggleSlider.style.left = '0';
-  screenshotToggleSlider.style.right = '0';
-  screenshotToggleSlider.style.bottom = '0';
-  screenshotToggleSlider.style.transition = '0.4s';
-  screenshotToggleSlider.style.borderRadius = '34px';
-  screenshotToggleSlider.style.backgroundColor = screenshotToggleInput.checked ? '#4c97ff' : '#ccc';
-  
-  // Create circle inside toggle
-  const screenshotToggleCircle = document.createElement('span');
-  screenshotToggleCircle.style.position = 'absolute';
-  screenshotToggleCircle.style.content = '""';
-  screenshotToggleCircle.style.height = '14px';
-  screenshotToggleCircle.style.width = '14px';
-  screenshotToggleCircle.style.left = '2px';
-  screenshotToggleCircle.style.bottom = '2px';
-  screenshotToggleCircle.style.backgroundColor = 'white';
-  screenshotToggleCircle.style.transition = '0.4s';
-  screenshotToggleCircle.style.borderRadius = '50%';
-  screenshotToggleCircle.style.transform = screenshotToggleInput.checked ? 'translateX(16px)' : 'none';
-  
-  screenshotToggleSlider.appendChild(screenshotToggleCircle);
-  screenshotToggleSwitch.appendChild(screenshotToggleInput);
-  screenshotToggleSwitch.appendChild(screenshotToggleSlider);
-  
-  // Create the label for the screenshot toggle
-  const screenshotToggleLabel = document.createElement('span');
-  screenshotToggleLabel.textContent = 'Include Screenshot';
-  screenshotToggleLabel.style.fontSize = '12px';
-  screenshotToggleLabel.style.color = '#575e75';
-  screenshotToggleLabel.style.userSelect = 'none';
-  
-  screenshotToggleContainer.appendChild(screenshotToggleSwitch);
-  screenshotToggleContainer.appendChild(screenshotToggleLabel);
-  
-  // Add event listener to save preference
-  screenshotToggleInput.addEventListener('change', function() {
-    const isChecked = this.checked;
-    
-    // Update the toggle appearance
-    screenshotToggleSlider.style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
-    screenshotToggleCircle.style.transform = isChecked ? 'translateX(16px)' : 'none';
-    
-    // Save the preference
-    window.BlockBuddy.Storage.setScreenshotPreference(isChecked);
-    console.log(`Screenshot preference changed to: ${isChecked ? 'enabled' : 'disabled'}`);
-  });
-  
-  // Add the screenshot toggle to the outer container
-  modelToggleOuterContainer.appendChild(screenshotToggleContainer);
-
-  // Create audio generation toggle container
-  const audioGenerationToggleContainer = document.createElement('div');
-  audioGenerationToggleContainer.style.display = 'flex';
-  audioGenerationToggleContainer.style.alignItems = 'center';
-  audioGenerationToggleContainer.style.gap = '6px';
-  
-  // Create audio generation toggle switch
-  const audioGenerationToggleSwitch = document.createElement('label');
-  audioGenerationToggleSwitch.style.position = 'relative';
-  audioGenerationToggleSwitch.style.display = 'inline-block';
-  audioGenerationToggleSwitch.style.width = '34px';
-  audioGenerationToggleSwitch.style.height = '18px';
-  audioGenerationToggleSwitch.style.margin = '0';
-  
-  // Create input for toggle
-  const audioGenerationToggleInput = document.createElement('input');
-  audioGenerationToggleInput.id = 'audioGenerationToggleInput';
-  audioGenerationToggleInput.type = 'checkbox';
-  audioGenerationToggleInput.style.opacity = '0';
-  audioGenerationToggleInput.style.width = '0';
-  audioGenerationToggleInput.style.height = '0';
-  
-  // Check local storage for preference and set initial state
-  audioGenerationToggleInput.checked = window.BlockBuddy.Storage.getGenerateAudioPreference();
-  
-  // Create slider
-  const audioGenerationToggleSlider = document.createElement('span');
-  audioGenerationToggleSlider.style.position = 'absolute';
-  audioGenerationToggleSlider.style.cursor = 'pointer';
-  audioGenerationToggleSlider.style.top = '0';
-  audioGenerationToggleSlider.style.left = '0';
-  audioGenerationToggleSlider.style.right = '0';
-  audioGenerationToggleSlider.style.bottom = '0';
-  audioGenerationToggleSlider.style.transition = '0.4s';
-  audioGenerationToggleSlider.style.borderRadius = '34px';
-  audioGenerationToggleSlider.style.backgroundColor = audioGenerationToggleInput.checked ? '#4c97ff' : '#ccc';
-  
-  // Create circle inside toggle
-  const audioGenerationToggleCircle = document.createElement('span');
-  audioGenerationToggleCircle.style.position = 'absolute';
-  audioGenerationToggleCircle.style.content = '""';
-  audioGenerationToggleCircle.style.height = '14px';
-  audioGenerationToggleCircle.style.width = '14px';
-  audioGenerationToggleCircle.style.left = '2px';
-  audioGenerationToggleCircle.style.bottom = '2px';
-  audioGenerationToggleCircle.style.backgroundColor = 'white';
-  audioGenerationToggleCircle.style.transition = '0.4s';
-  audioGenerationToggleCircle.style.borderRadius = '50%';
-  audioGenerationToggleCircle.style.transform = audioGenerationToggleInput.checked ? 'translateX(16px)' : 'none';
-  
-  audioGenerationToggleSlider.appendChild(audioGenerationToggleCircle);
-  audioGenerationToggleSwitch.appendChild(audioGenerationToggleInput);
-  audioGenerationToggleSwitch.appendChild(audioGenerationToggleSlider);
-  
-  // Create the label for the audio generation toggle
-  const audioGenerationToggleLabel = document.createElement('span');
-  audioGenerationToggleLabel.textContent = 'Generate Audio';
-  audioGenerationToggleLabel.style.fontSize = '12px';
-  audioGenerationToggleLabel.style.color = '#575e75';
-  audioGenerationToggleLabel.style.userSelect = 'none';
-  
-  audioGenerationToggleContainer.appendChild(audioGenerationToggleSwitch);
-  audioGenerationToggleContainer.appendChild(audioGenerationToggleLabel);
-  
-  // Add event listener to save preference
-  audioGenerationToggleInput.addEventListener('change', function() {
-    const isChecked = this.checked;
-    
-    // Update the toggle appearance
-    audioGenerationToggleSlider.style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
-    audioGenerationToggleCircle.style.transform = isChecked ? 'translateX(16px)' : 'none';
-    
-    // Save the preference
-    window.BlockBuddy.Storage.setGenerateAudioPreference(isChecked);
-    console.log(`Audio generation preference changed to: ${isChecked ? 'enabled' : 'disabled'}`);
-  });
-  
-  // Add the audio generation toggle to the outer container
-  modelToggleOuterContainer.appendChild(audioGenerationToggleContainer);
-
-  // Create minimized button
-  const minimizedButton = document.createElement("div");
-  minimizedButton.id = "minimizedButton";
-  shadow.appendChild(minimizedButton);
-  minimizedButton.style.position = "fixed";
-  minimizedButton.style.bottom = "80px";
-  minimizedButton.style.right = "20px";
-  minimizedButton.style.width = "60px";
-  minimizedButton.style.height = "60px";
-  minimizedButton.style.background = "#4c97ff";
-  minimizedButton.style.borderRadius = "12px";
-  minimizedButton.style.boxShadow = "0 5px 15px rgba(76, 151, 255, 0.4)";
-  minimizedButton.style.display = "none";
-  minimizedButton.style.flexDirection = "column";
-  minimizedButton.style.alignItems = "center";
-  minimizedButton.style.justifyContent = "center";
-  minimizedButton.style.cursor = "pointer";
-  minimizedButton.style.zIndex = "9999";
-  minimizedButton.style.transition = "all 0.3s ease";
-  minimizedButton.style.overflow = "hidden";
-  minimizedButton.style.border = "none";
-  minimizedButton.innerHTML = `
-    <div class="drag-handle" id="drag-handle" style="
-      width: 100%;
-      height: 25%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: rgba(0, 0, 0, 0.2);
-      cursor: move;
-      border-top-left-radius: 12px;
-      border-top-right-radius: 12px;
-    ">
-      <div style="width: 30px; height: 4px; background-color: white; border-radius: 2px;"></div>
-    </div>
-    <div class="click-area" id="click-area" style="
-      width: 100%;
-      height: 75%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: transparent;
-      cursor: pointer;
-    ">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
-        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-      </svg>
-    </div>
-  `;
-  
-  // Add event listeners for dragging and clicking
-  const dragHandle = minimizedButton.querySelector('#drag-handle');
-  const clickArea = minimizedButton.querySelector('#click-area');
-  
-  // Make minimized button draggable
-  let isDraggingMinimized = false;
-  let minimizedOffsetX, minimizedOffsetY;
-  let wasDragging = false; // Flag to track if we just finished dragging
-  
-  dragHandle.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    isDraggingMinimized = true;
-    wasDragging = false; // Reset the was-dragging flag
-    minimizedOffsetX = e.clientX - minimizedButton.getBoundingClientRect().left;
-    minimizedOffsetY = e.clientY - minimizedButton.getBoundingClientRect().top;
-    minimizedButton.style.transition = 'none'; // Disable transitions while dragging
-  });
-  
-  // Setup click handler for the click area only
-  clickArea.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Show the panel
-    window.BlockBuddy.UI.showPanel(panel, minimizedButton);
-  });
-  
-  // Remove the existing click handler on the whole minimized button
-  // to prevent overlapping behavior
-  
-  // Determine which edges an element should snap to
-  const getSnapEdges = (element, elementType) => {
-    return window.BlockBuddy.UI.getSnapEdges(element, elementType);
-  };
-  
-  // Position an element based on snap edges
-  const snapElementToEdges = (element, snapEdges, elementType) => {
-    return window.BlockBuddy.UI.snapElementToEdges(element, snapEdges, elementType);
-  };
-
-  // Get stored position and size from localStorage
-  const loadPanelPosition = () => {
-    const position = window.BlockBuddy.Storage.getPanelPosition();
-    if (position && position.snapEdges) {
-      snapElementToEdges(panel, position.snapEdges, 'panel');
-    } else {
-      // Default to bottom right if no saved position
-      snapElementToEdges(panel, { horizontal: 'bottom', vertical: 'right' }, 'panel');
+    // Load scratchblocks library if not already loaded
+    if (typeof window.scratchblocks === 'undefined') {
+      console.log("Loading scratchblocks library...");
+      const script = document.createElement('script');
+      script.src = chrome.runtime.getURL('js/libs/scratchblocks-v3.6-min.js');
+      document.head.appendChild(script);
+      
+      script.onload = function() {
+        console.log("Scratchblocks library loaded successfully");
+      };
+      
+      script.onerror = function() {
+        console.error("Failed to load scratchblocks library");
+      };
     }
-  };
   
-  const loadMinimizedButtonPosition = () => {
-    const position = window.BlockBuddy.Storage.getMinimizedButtonPosition();
-    if (position && position.snapEdges) {
-      snapElementToEdges(minimizedButton, position.snapEdges, 'minimized');
-      if (position.position) {
-        if (position.snapEdges.horizontal === 'top' || position.snapEdges.horizontal === 'bottom') {
-          minimizedButton.style.left = position.position + 'px';
-        } else if (position.snapEdges.vertical === 'left' || position.snapEdges.vertical === 'right') {
-          if (position.position < 0) {
-            // If position is negative, snap to bottom (default)
-            minimizedButton.style.top = '80%';
-          } else {
-            minimizedButton.style.top = position.position + 'px';
+    // Get all the UI elements by ID for event handling
+    const panel = shadow.getElementById("scratch-ai-tutor-panel");
+    const minimizedButton = shadow.getElementById("minimizedButton");
+    const systemMessageEl = shadow.getElementById("systemMessage");
+    const chatBodyEl = shadow.getElementById("chatBody");
+    const userInputEl = shadow.getElementById("userInput");
+    const sendButtonEl = shadow.querySelector(".send-button");
+    const closeButtonEl = shadow.querySelector(".close-button");
+    const clearChatButtonEl = shadow.getElementById("clearChatButton");
+    const voiceRecordButtonEl = shadow.getElementById("voiceRecordButton");
+    const recordingIndicatorEl = shadow.getElementById("recordingIndicator");
+    
+    // Get toggle elements
+    const modelToggleInput = shadow.getElementById("modelToggleInput");
+    const modelToggleCircle = shadow.getElementById("modelToggleCircle");
+    const screenshotToggleInput = shadow.getElementById("screenshotToggleInput");
+    const screenshotToggleSlider = shadow.getElementById("screenshotToggleSlider");
+    const screenshotToggleCircle = shadow.getElementById("screenshotToggleCircle");
+    const screenshotToggleContainer = shadow.getElementById("screenshotToggleContainer");
+    const audioGenerationToggleInput = shadow.getElementById("audioGenerationToggleInput");
+    const audioGenerationToggleSlider = shadow.getElementById("audioGenerationToggleSlider");
+    const audioGenerationToggleCircle = shadow.getElementById("audioGenerationToggleCircle");
+    
+    // Set initial toggle states from storage
+    modelToggleInput.checked = window.BlockBuddy.Storage.getModelPreference() || false;
+    if (modelToggleInput.checked) {
+      modelToggleCircle.style.transform = 'translateX(1rem)';
+      shadow.querySelector(".toggle-slider").style.backgroundColor = '#4c97ff';
+    }
+    
+    screenshotToggleInput.checked = window.BlockBuddy.Storage.getScreenshotPreference();
+    if (screenshotToggleInput.checked) {
+      screenshotToggleCircle.style.transform = 'translateX(1rem)';
+      screenshotToggleSlider.style.backgroundColor = '#4c97ff';
+    }
+    
+    audioGenerationToggleInput.checked = window.BlockBuddy.Storage.getGenerateAudioPreference();
+    if (audioGenerationToggleInput.checked) {
+      audioGenerationToggleCircle.style.transform = 'translateX(1rem)';
+      audioGenerationToggleSlider.style.backgroundColor = '#4c97ff';
+    }
+    
+    // Model toggle event listener
+    modelToggleInput.addEventListener('change', function() {
+      const isChecked = this.checked;
+      
+      // Update the toggle appearance
+      shadow.querySelector(".toggle-slider").style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
+      modelToggleCircle.style.transform = isChecked ? 'translateX(1rem)' : 'none';
+      
+      // Save the preference
+      window.BlockBuddy.Storage.setModelPreference(isChecked);
+      console.log(`Model preference changed to: ${isChecked ? 'thinking (o4-mini)' : 'non-thinking (4o-mini)'}`);
+      
+      // If thinking mode is enabled, disable screenshot toggle
+      if (isChecked) {
+        // Turn off screenshot toggle
+        screenshotToggleInput.checked = false;
+        window.BlockBuddy.Storage.setScreenshotPreference(false);
+        screenshotToggleSlider.style.backgroundColor = '#ccc';
+        screenshotToggleCircle.style.transform = 'none';
+        
+        // Disable screenshot toggle
+        screenshotToggleInput.disabled = true;
+        screenshotToggleSlider.style.opacity = '0.5';
+        screenshotToggleSlider.style.cursor = 'not-allowed';
+        screenshotToggleContainer.style.opacity = '0.5';
+        
+        // Add tooltip to show explanation
+        screenshotToggleContainer.title = "Screenshot feature is disabled in Thinking Mode - the thinking model doesn't support image input";
+      } else {
+        // Re-enable screenshot toggle
+        screenshotToggleInput.disabled = false;
+        screenshotToggleSlider.style.opacity = '1';
+        screenshotToggleSlider.style.cursor = 'pointer';
+        screenshotToggleContainer.style.opacity = '1';
+        
+        // Remove tooltip
+        screenshotToggleContainer.title = "";
+      }
+    });
+    
+    // Screenshot toggle event listener
+    screenshotToggleInput.addEventListener('change', function() {
+      const isChecked = this.checked;
+      
+      // Update the toggle appearance
+      screenshotToggleSlider.style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
+      screenshotToggleCircle.style.transform = isChecked ? 'translateX(1rem)' : 'none';
+      
+      // Save the preference
+      window.BlockBuddy.Storage.setScreenshotPreference(isChecked);
+      console.log(`Screenshot preference changed to: ${isChecked ? 'enabled' : 'disabled'}`);
+    });
+    
+    // Audio generation toggle event listener
+    audioGenerationToggleInput.addEventListener('change', function() {
+      const isChecked = this.checked;
+      
+      // Update the toggle appearance
+      audioGenerationToggleSlider.style.backgroundColor = isChecked ? '#4c97ff' : '#ccc';
+      audioGenerationToggleCircle.style.transform = isChecked ? 'translateX(1rem)' : 'none';
+      
+      // Save the preference
+      window.BlockBuddy.Storage.setGenerateAudioPreference(isChecked);
+      console.log(`Audio generation preference changed to: ${isChecked ? 'enabled' : 'disabled'}`);
+    });
+    
+    // Make panel draggable by header
+    const header = shadow.getElementById("panel-header");
+    let isDraggingPanel = false;
+    let panelOffsetX, panelOffsetY;
+    
+    header.addEventListener('mousedown', (e) => {
+      isDraggingPanel = true;
+      panelOffsetX = e.clientX - panel.getBoundingClientRect().left;
+      panelOffsetY = e.clientY - panel.getBoundingClientRect().top;
+      panel.style.transition = 'none'; // Disable transitions while dragging
+    });
+    
+    // Make minimized button draggable
+    const dragHandle = shadow.getElementById('drag-handle');
+    const clickArea = shadow.getElementById('click-area');
+    let isDraggingMinimized = false;
+    let minimizedOffsetX, minimizedOffsetY;
+    let wasDragging = false;
+    
+    dragHandle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isDraggingMinimized = true;
+      wasDragging = false;
+      minimizedOffsetX = e.clientX - minimizedButton.getBoundingClientRect().left;
+      minimizedOffsetY = e.clientY - minimizedButton.getBoundingClientRect().top;
+      minimizedButton.style.transition = 'none';
+    });
+    
+    // Setup click handler for the click area
+    clickArea.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Show the panel
+      window.BlockBuddy.UI.showPanel(panel, minimizedButton);
+    });
+    
+    // Global mouse events for drag and resize
+    document.addEventListener('mousemove', (e) => {
+      if (isDraggingPanel) {
+        e.preventDefault();
+        const newLeft = e.clientX - panelOffsetX;
+        const newTop = e.clientY - panelOffsetY;
+        
+        panel.style.left = newLeft + 'px';
+        panel.style.top = newTop + 'px';
+        panel.style.right = 'auto';
+        panel.style.bottom = 'auto';
+      } else if (isDraggingMinimized) {
+        e.preventDefault();
+        const newLeft = e.clientX - minimizedOffsetX;
+        const newTop = e.clientY - minimizedOffsetY;
+        
+        minimizedButton.style.left = newLeft + 'px';
+        minimizedButton.style.top = newTop + 'px';
+        minimizedButton.style.right = 'auto';
+        minimizedButton.style.bottom = 'auto';
+      }
+    });
+    
+    document.addEventListener('mouseup', () => {
+      if (isDraggingPanel) {
+        isDraggingPanel = false;
+        panel.style.transition = '0.3s ease';
+        
+        // Determine which edges to snap to
+        const snapEdges = window.BlockBuddy.UI.getSnapEdges(panel, 'panel');
+        
+        // Snap to edges
+        window.BlockBuddy.UI.snapElementToEdges(panel, snapEdges, 'panel');
+        
+        // Save panel position
+        const position = {
+          snapEdges: snapEdges,
+          width: panel.offsetWidth,
+          height: panel.offsetHeight
+        };
+        window.BlockBuddy.Storage.savePanelPosition(position);
+      }
+      
+      if (isDraggingMinimized) {
+        isDraggingMinimized = false;
+        wasDragging = true;
+        minimizedButton.style.transition = '0.3s ease';
+        
+        // Determine which edge to snap to
+        const snapEdges = window.BlockBuddy.UI.getSnapEdges(minimizedButton, 'minimized');
+        
+        // Snap to edge
+        window.BlockBuddy.UI.snapElementToEdges(minimizedButton, snapEdges, 'minimized');
+        
+        // Save minimized button position
+        let position = {
+          snapEdges: snapEdges
+        };
+        
+        // Store the free-axis position value
+        const rect = minimizedButton.getBoundingClientRect();
+        if (snapEdges.horizontal === 'top' || snapEdges.horizontal === 'bottom') {
+          position.position = rect.left;
+        } else if (snapEdges.vertical === 'left' || snapEdges.vertical === 'right') {
+          position.position = rect.top;
+        }
+        
+        window.BlockBuddy.Storage.saveMinimizedButtonPosition(position);
+        
+        setTimeout(() => {
+          wasDragging = false;
+        }, 300);
+      }
+    });
+    
+    // Add resize handle event listeners
+    const directions = ['e', 'w', 'n', 's', 'ne', 'nw', 'se', 'sw'];
+    let isResizing = false;
+    let currentResizeHandle = null;
+    let originalWidth, originalHeight, originalX, originalY, startX, startY;
+    
+    directions.forEach(dir => {
+      const handle = shadow.getElementById(`resize-handle-${dir}`);
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        isResizing = true;
+        currentResizeHandle = dir;
+        originalWidth = panel.offsetWidth;
+        originalHeight = panel.offsetHeight;
+        originalX = panel.getBoundingClientRect().left;
+        originalY = panel.getBoundingClientRect().top;
+        startX = e.clientX;
+        startY = e.clientY;
+        panel.style.transition = 'none';
+      });
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (isResizing) {
+        e.preventDefault();
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        
+        const minWidth = 200;
+        const minHeight = 300;
+        
+        let newWidth = originalWidth;
+        let newHeight = originalHeight;
+        let newX = originalX;
+        let newY = originalY;
+        
+        if (currentResizeHandle.includes('e')) {
+          newWidth = Math.max(minWidth, originalWidth + dx);
+        }
+        if (currentResizeHandle.includes('w')) {
+          const possibleWidth = Math.max(minWidth, originalWidth - dx);
+          if (possibleWidth !== minWidth || dx < 0) {
+            newX = originalX + originalWidth - possibleWidth;
+            newWidth = possibleWidth;
+          }
+        }
+        if (currentResizeHandle.includes('s')) {
+          newHeight = Math.max(minHeight, originalHeight + dy);
+        }
+        if (currentResizeHandle.includes('n')) {
+          const possibleHeight = Math.max(minHeight, originalHeight - dy);
+          if (possibleHeight !== minHeight || dy < 0) {
+            newY = originalY + originalHeight - possibleHeight;
+            newHeight = possibleHeight;
+          }
+        }
+        
+        panel.style.width = newWidth + 'px';
+        panel.style.height = newHeight + 'px';
+        panel.style.left = newX + 'px';
+        panel.style.top = newY + 'px';
+      }
+    });
+    
+    document.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        currentResizeHandle = null;
+        panel.style.transition = '';
+        
+        const snapEdges = window.BlockBuddy.UI.getSnapEdges(panel, 'panel');
+        window.BlockBuddy.UI.snapElementToEdges(panel, snapEdges, 'panel');
+        
+        const position = {
+          snapEdges: snapEdges,
+          width: panel.offsetWidth,
+          height: panel.offsetHeight
+        };
+        window.BlockBuddy.Storage.savePanelPosition(position);
+      }
+    });
+    
+    // Add close button event listener
+    closeButtonEl.addEventListener('click', () => {
+      window.BlockBuddy.UI.hidePanel(panel, minimizedButton);
+    });
+    
+    // Handle input focus events for styling
+    userInputEl.addEventListener('focus', () => {
+      shadow.getElementById("inputContainer").classList.add('focused');
+    });
+    
+    userInputEl.addEventListener('blur', () => {
+      shadow.getElementById("inputContainer").classList.remove('focused');
+    });
+    
+    // Get stored position and size from localStorage and apply them
+    const loadPanelPosition = () => {
+      const position = window.BlockBuddy.Storage.getPanelPosition();
+      if (position && position.snapEdges) {
+        window.BlockBuddy.UI.snapElementToEdges(panel, position.snapEdges, 'panel');
+      } else {
+        window.BlockBuddy.UI.snapElementToEdges(panel, { horizontal: 'bottom', vertical: 'right' }, 'panel');
+      }
+    };
+    
+    const loadMinimizedButtonPosition = () => {
+      const position = window.BlockBuddy.Storage.getMinimizedButtonPosition();
+      if (position && position.snapEdges) {
+        window.BlockBuddy.UI.snapElementToEdges(minimizedButton, position.snapEdges, 'minimized');
+        if (position.position) {
+          if (position.snapEdges.horizontal === 'top' || position.snapEdges.horizontal === 'bottom') {
+            minimizedButton.style.left = position.position + 'px';
+          } else if (position.snapEdges.vertical === 'left' || position.snapEdges.vertical === 'right') {
+            if (position.position < 0) {
+              minimizedButton.style.top = '80%';
+            } else {
+              minimizedButton.style.top = position.position + 'px';
+            }
           }
         }
       }
-    }
-  };
-
-  // Load positions
-  loadPanelPosition();
-  loadMinimizedButtonPosition();
-
-  // Make panel draggable by header
-  let isDraggingPanel = false;
-  let panelOffsetX, panelOffsetY;
-  
-  header.addEventListener('mousedown', (e) => {
-    isDraggingPanel = true;
-    panelOffsetX = e.clientX - panel.getBoundingClientRect().left;
-    panelOffsetY = e.clientY - panel.getBoundingClientRect().top;
-    panel.style.transition = 'none'; // Disable transitions while dragging
-  });
-  
-  // Global mouse events for drag and resize
-  document.addEventListener('mousemove', (e) => {
-    if (isDraggingPanel) {
-      e.preventDefault();
-      // Move panel with pointer during drag (temporary positioning)
-      const newLeft = e.clientX - panelOffsetX;
-      const newTop = e.clientY - panelOffsetY;
-      
-      panel.style.left = newLeft + 'px';
-      panel.style.top = newTop + 'px';
-      panel.style.right = 'auto';
-      panel.style.bottom = 'auto';
-    } else if (isDraggingMinimized) {
-      e.preventDefault();
-      // Move minimized button with pointer during drag (temporary positioning)
-      const newLeft = e.clientX - minimizedOffsetX;
-      const newTop = e.clientY - minimizedOffsetY;
-      
-      minimizedButton.style.left = newLeft + 'px';
-      minimizedButton.style.top = newTop + 'px';
-      minimizedButton.style.right = 'auto';
-      minimizedButton.style.bottom = 'auto';
-    }
-  });
-
-  
-  
-  document.addEventListener('mouseup', () => {
-    if (isDraggingPanel) {
-      isDraggingPanel = false;
-      panel.style.transition = '0.3s ease'; // Restore transitions
-      
-      // Determine which edges to snap to
-      const snapEdges = getSnapEdges(panel, 'panel');
-      
-      // Snap to edges
-      snapElementToEdges(panel, snapEdges, 'panel');
-      
-      // Save panel position
-      const position = {
-        snapEdges: snapEdges,
-        width: panel.offsetWidth,
-        height: panel.offsetHeight
-      };
-      window.BlockBuddy.Storage.savePanelPosition(position);
-    }
+    };
     
-    if (isDraggingMinimized) {
-      isDraggingMinimized = false;
-      wasDragging = true; // Set the flag that we just finished dragging
-      minimizedButton.style.transition = '0.3s ease'; // Restore transitions
-      
-      // Determine which edge to snap to
-      const snapEdges = getSnapEdges(minimizedButton, 'minimized');
-      
-      // Snap to edge
-      snapElementToEdges(minimizedButton, snapEdges, 'minimized');
-      
-      // Save minimized button position
-      let position = {
-        snapEdges: snapEdges
-      };
-      
-      // Store the free-axis position value
-      const rect = minimizedButton.getBoundingClientRect();
-      if (snapEdges.horizontal === 'top' || snapEdges.horizontal === 'bottom') {
-        // If snapped to top or bottom, store the left position
-        position.position = rect.left;
-      } else if (snapEdges.vertical === 'left' || snapEdges.vertical === 'right') {
-        // If snapped to left or right, store the top position
-        position.position = rect.top;
-      }
-      
-      window.BlockBuddy.Storage.saveMinimizedButtonPosition(position);
-      
-      // Use setTimeout to reset the wasDragging flag after a delay
-      setTimeout(() => {
-        wasDragging = false;
-      }, 300);
-    }
-  });
-
-  // Resize functionality
-  let isResizing = false;
-  let currentResizeHandle = null;
-  let originalWidth, originalHeight, originalX, originalY, startX, startY;
-  
-  directions.forEach(dir => {
-    const handle = shadow.getElementById(`resize-handle-${dir}`);
-    handle.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      isResizing = true;
-      currentResizeHandle = dir;
-      originalWidth = panel.offsetWidth;
-      originalHeight = panel.offsetHeight;
-      originalX = panel.getBoundingClientRect().left;
-      originalY = panel.getBoundingClientRect().top;
-      startX = e.clientX;
-      startY = e.clientY;
-      panel.style.transition = 'none'; // Disable transitions while resizing
-    });
-  });
-  
-  document.addEventListener('mousemove', (e) => {
-    if (isResizing) {
-      e.preventDefault();
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      
-      // Minimum dimensions
-      const minWidth = 200;
-      const minHeight = 300;
-      
-      let newWidth = originalWidth;
-      let newHeight = originalHeight;
-      let newX = originalX;
-      let newY = originalY;
-      
-      // Handle different resize directions
-      if (currentResizeHandle.includes('e')) {
-        newWidth = Math.max(minWidth, originalWidth + dx);
-      }
-      if (currentResizeHandle.includes('w')) {
-        const possibleWidth = Math.max(minWidth, originalWidth - dx);
-        if (possibleWidth !== minWidth || dx < 0) {
-          newX = originalX + originalWidth - possibleWidth;
-          newWidth = possibleWidth;
-        }
-      }
-      if (currentResizeHandle.includes('s')) {
-        newHeight = Math.max(minHeight, originalHeight + dy);
-      }
-      if (currentResizeHandle.includes('n')) {
-        const possibleHeight = Math.max(minHeight, originalHeight - dy);
-        if (possibleHeight !== minHeight || dy < 0) {
-          newY = originalY + originalHeight - possibleHeight;
-          newHeight = possibleHeight;
-        }
-      }
-      
-      // Apply new dimensions and position
-      panel.style.width = newWidth + 'px';
-      panel.style.height = newHeight + 'px';
-      panel.style.left = newX + 'px';
-      panel.style.top = newY + 'px';
-    }
-  });
-  
-  document.addEventListener('mouseup', () => {
-    if (isResizing) {
-      isResizing = false;
-      currentResizeHandle = null;
-      panel.style.transition = ''; // Restore transitions
-      
-      // After resizing, snap to appropriate edges
-      const snapEdges = getSnapEdges(panel, 'panel');
-      snapElementToEdges(panel, snapEdges, 'panel');
-      
-      // Save panel position
-      const position = {
-        snapEdges: snapEdges,
-        width: panel.offsetWidth,
-        height: panel.offsetHeight
-      };
-      window.BlockBuddy.Storage.savePanelPosition(position);
-    }
-  });
-
-  // Add event listeners for close and clear chat buttons
-  closeButton.addEventListener('click', () => {
-    // Hide panel and show minimized button
-    window.BlockBuddy.UI.hidePanel(panel, minimizedButton);
-  });
-
-  // Initialize event listeners
-  
-  // Handle input focus events for styling
-  userInput.addEventListener('focus', () => {
-    inputContainer.classList.add('focused');
-  });
-  
-  userInput.addEventListener('blur', () => {
-    inputContainer.classList.remove('focused');
-  });
-  
-  // Initialize resizing functionality
-  
-  // Return the created UI elements
-  return {
-    container,
-    shadow,
-    panel,
-    minimizedButton,
-    systemMessageEl: shadow.getElementById("systemMessage"),
-    chatBodyEl: shadow.getElementById("chatBody"),
-    userInputEl: shadow.getElementById("userInput"),
-    sendButtonEl: shadow.querySelector(".send-button"),
-    closeButtonEl: shadow.querySelector(".close-button"),
-    clearChatButtonEl: shadow.getElementById("clearChatButton"),
-    voiceRecordButtonEl: shadow.getElementById("voiceRecordButton"),
-    recordingIndicatorEl: shadow.getElementById("recordingIndicator")
+    // Load positions
+    loadPanelPosition();
+    loadMinimizedButtonPosition();
+    
+    // Return the created UI elements
+    return {
+      container,
+      shadow,
+      panel,
+      minimizedButton,
+      systemMessageEl,
+      chatBodyEl,
+      userInputEl,
+      sendButtonEl,
+      closeButtonEl,
+      clearChatButtonEl,
+      voiceRecordButtonEl,
+      recordingIndicatorEl
+    };
   };
-};
 
 /**
  * Create audio player element with controls
