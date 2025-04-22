@@ -125,6 +125,28 @@ async function sendQuestionToBackend(data) {
   console.log("Sending question to backend API:", data);
   
   try {
+    // If we have a projectId, try to fetch project details from Scratch API
+    if (data.projectId) {
+      try {
+        const res1 = await fetch(`https://api.scratch.mit.edu/projects/${data.projectId}`);
+        const details = await res1.json();
+        
+        if (details && !details.error) {
+          console.log("Successfully fetched project details from Scratch API");
+          // Add project details to the request data
+          const token = details.project_token;
+          if (token) {
+            data.projectToken = token;
+          } else {
+            console.log("Failed to get token for project", data.projectId);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching project details from Scratch API:", error);
+        // Continue with the request even if fetching project details fails
+      }
+    }
+
     // API endpoint URL 
     const apiUrl = "https://scratch-ai-tutor.vercel.app/api/chat-response";
     
