@@ -232,7 +232,7 @@ window.BlockBuddy.UI.createUI = function() {
         
         <!-- Header with title and buttons -->
         <div id="panel-header">
-          <button class="close-button">×</button>
+          <button class="close-button" style="width: 2rem; height: 2rem; background: rgba(255, 255, 255, 0.3); border: none; color: white; font-size: 1.25rem; font-weight: bold; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s ease, transform 0.2s ease;">×</button>
           <button id="clearChatButton" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; padding: 0.375rem 0.75rem; border-radius: 1rem; margin-left: auto; transition: background-color 0.2s ease, transform 0.2s ease;">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.25rem;">
               <polyline points="3 6 5 6 21 6"></polyline>
@@ -688,13 +688,15 @@ window.BlockBuddy.UI.createUI = function() {
       window.BlockBuddy.UI.hidePanel(panel, minimizedButton);
     });
     
-    // Handle input focus events for styling
-    userInputEl.addEventListener('focus', () => {
-      shadow.getElementById("inputContainer").classList.add('focused');
+    // Add hover effects to the close button
+    closeButtonEl.addEventListener('mouseenter', () => {
+      closeButtonEl.style.background = 'rgba(255, 255, 255, 0.4)';
+      closeButtonEl.style.transform = 'scale(1.1)';
     });
     
-    userInputEl.addEventListener('blur', () => {
-      shadow.getElementById("inputContainer").classList.remove('focused');
+    closeButtonEl.addEventListener('mouseleave', () => {
+      closeButtonEl.style.background = 'rgba(255, 255, 255, 0.3)';
+      closeButtonEl.style.transform = 'scale(1)';
     });
     
     // Add hover effects to the Clear Chat button
@@ -706,6 +708,15 @@ window.BlockBuddy.UI.createUI = function() {
     clearChatButtonEl.addEventListener('mouseleave', () => {
       clearChatButtonEl.style.background = 'rgba(255, 255, 255, 0.2)';
       clearChatButtonEl.style.transform = 'scale(1)';
+    });
+    
+    // Handle input focus events for styling
+    userInputEl.addEventListener('focus', () => {
+      shadow.getElementById("inputContainer").classList.add('focused');
+    });
+    
+    userInputEl.addEventListener('blur', () => {
+      shadow.getElementById("inputContainer").classList.remove('focused');
     });
     
     // Get stored position and size from localStorage and apply them
