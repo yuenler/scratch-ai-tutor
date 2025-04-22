@@ -525,16 +525,16 @@ function blockString(targetScripts) {
 export default async function convertScratchURLToBlocks(url, token = null) {
   try {
     // First attempt with provided token
-    let result = await getProjectFromUrl(url, token);     
+    let result = await getProjectFromUrl(url, null);     
     
     // If project fetch failed and we were using a provided token, try again without it
     // (the token might have expired)
-    if (!result.project && token) {
-      console.log("Provided token failed, fetching a new one...");
-      // wait 1 second to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      result = await getProjectFromUrl(url, null);
-    }
+    // if (!result.project && token) {
+    //   console.log("Provided token failed, fetching a new one...");
+    //   // wait 1 second to avoid rate limiting
+    //   await new Promise(resolve => setTimeout(resolve, 1000));
+    //   result = await getProjectFromUrl(url, null);
+    // }
     
     if (!result.project) {
       console.error("Failed to download project.");
