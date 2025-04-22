@@ -31,7 +31,7 @@
   "host_permissions": ["<all_urls>"],
   "web_accessible_resources": [
     {
-      "resources": ["lib/*", "js/*", "images/*"],
+      "resources": ["lib/*", "js/*", "images/*", "css/*"],
       "matches": ["<all_urls>"]
     }
   ],
