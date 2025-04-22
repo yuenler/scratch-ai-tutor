@@ -88,13 +88,12 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       
       // Apply saved size if available
       if (position) {
-        if (position.size) {
-          panel.style.width = position.size.width + "px";
-          panel.style.height = position.size.height + "px";
-        } else if (position.width && position.height) {
-          panel.style.width = position.width + "px";
-          panel.style.height = position.height + "px";
-        }
+        // If saved dimensions exceed screen size, use percentage-based fallbacks
+        const maxWidth = window.innerWidth * 0.4;
+        const maxHeight = window.innerHeight * 0.75;
+        
+        panel.style.width = (position.width > window.innerWidth) ? maxWidth + "px" : position.width + "px";
+        panel.style.height = (position.height > window.innerHeight) ? maxHeight + "px" : position.height + "px";
       }
       
       // Save position if it was default

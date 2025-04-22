@@ -186,13 +186,12 @@ window.BlockBuddy.UI.showPanel = function(panel, minimizedButton) {
   
   // Apply saved size if available
   if (panelPosition) {
-    if (panelPosition.size) {
-      panel.style.width = panelPosition.size.width + "px";
-      panel.style.height = panelPosition.size.height + "px";
-    } else if (panelPosition.width && panelPosition.height) {
-      panel.style.width = panelPosition.width + "px";
-      panel.style.height = panelPosition.height + "px";
-    }
+    // If saved dimensions exceed screen size, use percentage-based fallbacks
+    const maxWidth = window.innerWidth * 0.4;
+    const maxHeight = window.innerHeight * 0.75;
+    
+    panel.style.width = (panelPosition.width > window.innerWidth) ? maxWidth + "px" : panelPosition.width + "px";
+    panel.style.height = (panelPosition.height > window.innerHeight) ? maxHeight + "px" : panelPosition.height + "px";
   }
   
   // Save this position
