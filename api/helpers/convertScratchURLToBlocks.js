@@ -437,9 +437,6 @@ function formatBlock(blockId, blocks, name, inputs) {
       // inputName is of the form [fieldName, mapping]
       const fieldName = inputName[0];
       const mapping = inputName[1];
-      if (fieldName === "BROADCAST_OPTION"){
-        console.log("Mapping found:", inputName, mapping, fieldName, mapping[fieldName]);
-      }
       args.push(getFieldName(mapping, block, fieldName));
     } else {
       throw new Error(`unsupported block type ${typeof inputName}`);
@@ -456,18 +453,12 @@ function formatBlock(blockId, blocks, name, inputs) {
 // Get a field’s display value.
 function getFieldName(mapping, block, fieldName) {
   const value = String(block.fields[fieldName][0]);
-  if (fieldName === "BROADCAST_OPTION"){
-    console.log("Broadcast option:", block.fields[fieldName]);
-    console.log(mapping);
-    console.log(value);
-    console.log(mapping[value]);
-  }
   if (mapping && mapping[value]) {
     return mapping[value];
   } else if (mapping && mapping.attrs && mapping.attrs.includes("preservecase")) {
     return value;
   }
-  return value.toLowerCase();
+  return value;
 }
 
 // Create the final blocks string with indentation.
