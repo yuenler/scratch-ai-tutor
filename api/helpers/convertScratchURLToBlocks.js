@@ -455,6 +455,9 @@ function getFieldName(mapping, block, fieldName) {
   const value = String(block.fields[fieldName][0]);
   if (fieldName === "BROADCAST_OPTION"){
     console.log("Broadcast option:", block.fields[fieldName]);
+    console.log(mapping);
+    console.log(value);
+    console.log(mapping[value]);
   }
   if (mapping && mapping[value]) {
     return mapping[value];
