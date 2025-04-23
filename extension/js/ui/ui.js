@@ -47,11 +47,21 @@ window.BlockBuddy.UI.snapElementToEdges = function(element, snapEdges, elementTy
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
   
+  // Store the current width and height
+  const currentWidth = element.style.width;
+  const currentHeight = element.style.height;
+  
   // Reset all position properties
   element.style.top = 'auto';
   element.style.left = 'auto';
   element.style.right = 'auto';
   element.style.bottom = 'auto';
+  
+  // Restore width and height if they exist and we're dealing with a panel
+  if (elementType === 'panel' && currentWidth && currentHeight) {
+    element.style.width = currentWidth;
+    element.style.height = currentHeight;
+  }
   
   const { horizontal, vertical } = snapEdges;
   const margin = elementType === 'minimized' ? EDGE_MARGIN : 0;
@@ -360,7 +370,6 @@ window.BlockBuddy.UI.createUI = function() {
     const screenshotToggleInput = shadow.getElementById("screenshotToggleInput");
     const screenshotToggleSlider = shadow.getElementById("screenshotToggleSlider");
     const screenshotToggleCircle = shadow.getElementById("screenshotToggleCircle");
-    const screenshotToggleContainer = shadow.getElementById("screenshotToggleContainer");
     const audioGenerationToggleInput = shadow.getElementById("audioGenerationToggleInput");
     const audioGenerationToggleSlider = shadow.getElementById("audioGenerationToggleSlider");
     const audioGenerationToggleCircle = shadow.getElementById("audioGenerationToggleCircle");
@@ -603,20 +612,16 @@ window.BlockBuddy.UI.createUI = function() {
         }
         if (currentResizeHandle.includes('w')) {
           const possibleWidth = Math.max(minWidth, originalWidth - dx);
-          if (possibleWidth !== minWidth || dx < 0) {
-            newX = originalX + originalWidth - possibleWidth;
-            newWidth = possibleWidth;
-          }
+          newX = originalX + originalWidth - possibleWidth;
+          newWidth = possibleWidth;
         }
         if (currentResizeHandle.includes('s')) {
           newHeight = Math.max(minHeight, originalHeight + dy);
         }
         if (currentResizeHandle.includes('n')) {
           const possibleHeight = Math.max(minHeight, originalHeight - dy);
-          if (possibleHeight !== minHeight || dy < 0) {
-            newY = originalY + originalHeight - possibleHeight;
-            newHeight = possibleHeight;
-          }
+          newY = originalY + originalHeight - possibleHeight;
+          newHeight = possibleHeight;
         }
 
         // if the height is more than 0.9 of the viewport height, set to 0.9
@@ -642,13 +647,25 @@ window.BlockBuddy.UI.createUI = function() {
         currentResizeHandle = null;
         panel.style.transition = '';
         
+        // Get the new dimensions after resizing
+        const newWidth = panel.offsetWidth;
+        const newHeight = panel.offsetHeight;
+        
+        // Get the current snap edges
         const snapEdges = window.BlockBuddy.UI.getSnapEdges(panel, 'panel');
+        
+        // Apply snapping while preserving the new dimensions
         window.BlockBuddy.UI.snapElementToEdges(panel, snapEdges, 'panel');
         
+        // Re-apply dimensions after snapping to ensure they're preserved
+        panel.style.width = `${newWidth}px`;
+        panel.style.height = `${newHeight}px`;
+        
+        // Save the new panel position and dimensions
         const position = {
           snapEdges: snapEdges,
-          width: panel.offsetWidth,
-          height: panel.offsetHeight
+          width: newWidth,
+          height: newHeight
         };
         window.BlockBuddy.Storage.savePanelPosition(position);
       }

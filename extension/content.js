@@ -90,7 +90,7 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
       if (position) {
         // If saved dimensions exceed screen size, use percentage-based fallbacks
         const maxWidth = window.innerWidth * 0.4;
-        const maxHeight = window.innerHeight * 0.75;
+        const maxHeight = window.innerHeight * 0.8;
         
         panel.style.width = (position.width > window.innerWidth) ? maxWidth + "px" : position.width + "px";
         panel.style.height = (position.height > window.innerHeight) ? maxHeight + "px" : position.height + "px";
