@@ -58,10 +58,10 @@ window.BlockBuddy.Storage.loadProjectTokens = function() {
         // Define default values to use only when preference doesn't exist
         const defaultValues = {
           autoplay: false,
-          modelPreference: true,
+          modelPreference: false,
           uiState: { minimized: false },
           screenshotEnabled: false,
-          generateAudio: true,
+          generateAudio: false,
           minimizedButtonPosition: { position: 100, snapEdges: { horizontal: null, vertical: 'right' } }
         };
 
