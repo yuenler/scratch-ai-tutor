@@ -265,13 +265,13 @@ window.BlockBuddy.UI.createUI = function() {
         <div id="inputContainer" style="display: flex; padding: 0.625rem; border-top: 0.0625rem solid #ddd;">
           <textarea id="userInput" style="flex: 1; border: 0.0625rem solid #ddd; border-radius: 1.125rem; padding: 0.625rem 0.9375rem; font-size: 0.875rem; resize: none; outline: none; max-height: 6.25rem; overflow-y: auto; cursor: text;" placeholder="Ask a question..."></textarea>
           
-          <button class="send-button" disabled style="background: #cccccc; color: white; border: none; border-radius: 50%; width: 2.25rem; height: 2.25rem; margin-left: 0.625rem; cursor: default; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease;">
+          <button class="send-button" disabled style="background: #cccccc; color: white; border: none; border-radius: 50%; width: 2.25rem; height: 2.25rem; margin-left: 0.625rem; cursor: default; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease, transform 0.2s ease;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="white"/>
             </svg>
           </button>
           
-          <button id="voiceRecordButton" style="background: #a83232; color: white; border: none; border-radius: 50%; width: 2.25rem; height: 2.25rem; margin-left: 0.625rem; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative;">
+          <button id="voiceRecordButton" style="background: #a83232; color: white; border: none; border-radius: 50%; width: 2.25rem; height: 2.25rem; margin-left: 0.625rem; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; transition: transform 0.2s ease;">
             <svg class="microphone-icon" fill="white" width="18" height="18" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 512 512">
               <g>
                 <g>
@@ -399,6 +399,7 @@ window.BlockBuddy.UI.createUI = function() {
         sendButtonEl.disabled = true;
         sendButtonEl.style.background = '#cccccc';
         sendButtonEl.style.cursor = 'default';
+        sendButtonEl.style.transform = 'scale(1)';
       } else {
         sendButtonEl.disabled = false;
         sendButtonEl.style.background = '#4c97ff';
@@ -414,6 +415,28 @@ window.BlockBuddy.UI.createUI = function() {
     
     // Initial button state update
     updateSendButtonState();
+    
+    // Add hover effects to the voice record button
+    voiceRecordButtonEl.addEventListener('mouseenter', () => {
+      voiceRecordButtonEl.style.transform = 'scale(1.1)';
+      voiceRecordButtonEl.style.transition = 'transform 0.2s ease';
+    });
+    
+    voiceRecordButtonEl.addEventListener('mouseleave', () => {
+      voiceRecordButtonEl.style.transform = 'scale(1)';
+      voiceRecordButtonEl.style.transition = 'transform 0.2s ease';
+    });
+    
+    // Add hover effects to the send button (only applies when button is enabled)
+    sendButtonEl.addEventListener('mouseenter', () => {
+      if (!sendButtonEl.disabled) {
+        sendButtonEl.style.transform = 'scale(1.1)';
+      }
+    });
+    
+    sendButtonEl.addEventListener('mouseleave', () => {
+      sendButtonEl.style.transform = 'scale(1)';
+    });
     
     // Model toggle event listener
     modelToggleInput.addEventListener('change', function() {
