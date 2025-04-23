@@ -724,6 +724,10 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
     // Load previous chat history if available
     const currentProjectId = window.BlockBuddy.Utils.getProjectId(window.location.href);
     if (currentProjectId) {
+      // Set flag to indicate we're loading initial chat history
+      // This will prevent autoplay of messages loaded from history
+      window.BlockBuddy._isInitialLoad = true;
+      
       const previousChat = window.BlockBuddy.Storage.getChatHistory(currentProjectId);
       
       if (previousChat && previousChat.length > 0) {
@@ -774,6 +778,12 @@ if (!window.location.href.includes("scratch.mit.edu/projects/")) {
         // Scroll to the bottom of the chat
         chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
       }
+      
+      // Reset the initial load flag after history is loaded
+      setTimeout(() => {
+        window.BlockBuddy._isInitialLoad = false;
+        console.log("Initial chat history load complete, new messages can autoplay if enabled");
+      }, 500); // Short delay to ensure all audio elements are created
     }
   });
 }

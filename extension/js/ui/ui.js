@@ -1097,16 +1097,17 @@ window.BlockBuddy.UI.addMessage = function(chatBody, shadow, content, type, audi
       // For messages loaded from history (on page reload), NEVER autoplay
       const isReloadedMessage = document.readyState === 'complete' || 
                                window.performance && 
-                               window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD;
+                               window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD ||
+                               window.BlockBuddy._isInitialLoad === true;
       
-      // Only allow autoplay for newly generated messages, and never on page reload
+      // Only allow autoplay for newly generated messages, never on page reload or initial load
       const shouldAutoplay = !isReloadedMessage && window.BlockBuddy.Storage.getAutoplayPreference();
       
       const audioPlayer = window.BlockBuddy.UI.createAudioPlayer(
         audioData, 
         audioFormat, 
-        shouldAutoplay, // No autoplay on reload
-        isReloadedMessage // Pass info that this is a reloaded message
+        shouldAutoplay, // Autoplay based on our check
+        true // Always mark as reloaded for history messages
       );
       messageDiv.appendChild(audioPlayer.container);
       
