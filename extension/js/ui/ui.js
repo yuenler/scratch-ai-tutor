@@ -324,14 +324,12 @@ window.BlockBuddy.UI.createUI = function() {
       </div>
       
       <!-- Minimized button -->
-      <div id="minimizedButton" style="position: fixed; bottom: 5rem; right: 1.25rem; width: 3.75rem; height: 3.75rem; background: #4c97ff; border-radius: 0.75rem; box-shadow: 0 0.3125rem 0.9375rem rgba(76, 151, 255, 0.4); display: none; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; z-index: 9999; transition: all 0.3s ease; overflow: hidden; border: none;">
-        <div class="drag-handle" id="drag-handle" style="width: 100%; height: 25%; display: flex; justify-content: center; align-items: center; background-color: rgba(0, 0, 0, 0.2); cursor: move; border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem;">
+      <div id="minimizedButton" style="position: fixed; bottom: 5rem; right: 1.25rem; width: 60px; height: 70px; background: #4c97ff; border-radius: 12px; box-shadow: 0 5px 15px rgba(76, 151, 255, 0.4); display: none; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; z-index: 9999; transition: all 0.3s ease; overflow: hidden; border: none;">
+        <div class="drag-handle" id="drag-handle" style="width: 100%; height: 25%; display: flex; justify-content: center; align-items: center; background-color: rgba(0, 0, 0, 0.2); cursor: move; border-top-left-radius: 12px; border-top-right-radius: 12px;">
           <div style="width: 1.875rem; height: 0.25rem; background-color: white; border-radius: 0.125rem;"></div>
         </div>
-        <div class="click-area" id="click-area" style="width: 100%; height: 75%; display: flex; justify-content: center; align-items: center; background-color: transparent; cursor: pointer;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-          </svg>
+        <div class="click-area" id="click-area" style="width: 100%; height: 75%; display: flex; justify-content: center; align-items: center; background-color: transparent; cursor: pointer; position: relative; overflow: hidden;">
+          <img src="${chrome.runtime.getURL("images/icon128.png")}" style="width: 100%; height: 100%; object-fit: cover;" alt="BlockBuddy Logo">
         </div>
       </div>
     `;
