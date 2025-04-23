@@ -453,6 +453,9 @@ function formatBlock(blockId, blocks, name, inputs) {
 // Get a field’s display value.
 function getFieldName(mapping, block, fieldName) {
   const value = String(block.fields[fieldName][0]);
+  if (fieldName === "BROADCAST_OPTION"){
+    console.log("Broadcast option:", block.fields[fieldName]);
+  }
   if (mapping && mapping[value]) {
     return mapping[value];
   } else if (mapping && mapping.attrs && mapping.attrs.includes("preservecase")) {
