@@ -437,6 +437,7 @@ function formatBlock(blockId, blocks, name, inputs) {
       // inputName is of the form [fieldName, mapping]
       const fieldName = inputName[0];
       const mapping = inputName[1];
+      console.log("Mapping found:", inputName, mapping, fieldName, mapping[fieldName]);
       args.push(getFieldName(mapping, block, fieldName));
     } else {
       throw new Error(`unsupported block type ${typeof inputName}`);
